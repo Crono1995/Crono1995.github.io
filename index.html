@@ -43,14 +43,14 @@
             padding: 2rem;
         }
         .profile-image {
-            width: 200px;
+            width: 150px;
             height: auto;
             border-radius: 50%;
             box-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
             margin-bottom: 1rem;
         }
         .content {
-            max-width: 800px;
+            max-width: 1000px;
             text-align: center;
             padding: 2rem;
             background: rgba(0, 0, 0, 0.8);
@@ -91,6 +91,52 @@
         }
         footer a:hover {
             text-decoration: underline;
+        }
+
+        /* Responsive Styles */
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 2rem;
+            }
+            nav {
+                display: flex;
+                flex-direction: column;
+            }
+            nav a {
+                margin: 0.5rem 0;
+            }
+            .profile-image {
+                width: 120px;
+            }
+            .content {
+                padding: 1.5rem;
+                margin-bottom: 1.5rem;
+            }
+            .content h2 {
+                font-size: 1.5rem;
+            }
+            .content p, .content ul {
+                font-size: 1rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            header h1 {
+                font-size: 1.5rem;
+            }
+            .profile-image {
+                width: 100px;
+            }
+            .content {
+                padding: 1rem;
+                margin-bottom: 1rem;
+            }
+            .content h2 {
+                font-size: 1.25rem;
+            }
+            .content p, .content ul {
+                font-size: 0.9rem;
+            }
         }
     </style>
 </head>
@@ -157,14 +203,14 @@
                 <li><a href="https://github.com/Crono1995/AZURE/blob/main/Performance" target="_blank">VM Performance Monitor</a></li>
                 <li><a href="https://github.com/Crono1995/AZURE/blob/main/RHEL-troubleshooter" target="_blank">RHEL RHUIS Repos Troubleshooter</a></li>
                 <li><a href="https://github.com/Crono1995/AZURE/blob/main/VM-Consults" target="_blank">Multi DISTROs VM Consults</a></li>
-                <li><a href="https://github.com/Crono1995/AZURE/blob/main/logs-errors-finder" target="_blank">LOGS Error Finder</a></li>
+                <li><a href="https://github.com/Crono1995/AZURE/blob/main/logs-errors-finder" target="_blank">Logs Error Finder</a></li>
             </ul>
         </div>
         <div class="content" id="experience">
-            <h2>Professional Experience</h2>
+            <h2>Experience</h2>
             <h3>AI Engineer & RPA Developer</h3>
             <p><strong>Lanshore (UiPath as Client)</strong> — 2022 – 2023</p>
-            <p>Experienced AI Support Engineer with a strong track record of ensuring the effective operation of AI systems and models. Skilled in providing technical support, updating documentation, and troubleshooting issues. Adept at integrating new AI technologies and tools, from data collection to model deployment.</p>
+            <p>Experienced AI Support Engineer with a strong track record of ensuring the effective operation of AI systems and models. Proficient in data collection, model training, deployment, and troubleshooting. Skilled in integrating new AI technologies and tools.</p>
             <h3>Linux Engineer</h3>
             <p><strong>Tek Experts (Microsoft Cloud Clients)</strong> — 2020 – 2022</p>
             <p>Azure Cloud Support Engineer specializing in Linux System Administration and Engineering. Expertise in troubleshooting, implementing requests, and mitigating PaaS incidents. Knowledgeable in various Linux distributions on Azure, providing comprehensive support.</p>
