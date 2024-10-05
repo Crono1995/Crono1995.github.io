@@ -1,125 +1,94 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>Alberto Villalobos Barboza - CV</title>
     <style>
-        /* General Styles */
         body {
-            font-family: 'Arial', sans-serif;
+            font-family: Arial, sans-serif;
+            background-color: #000; /* Black background */
+            color: #fff; /* White text */
             margin: 0;
             padding: 0;
-            background-color: #000;
-            color: #fff;
+            line-height: 1.6;
         }
 
         .container {
             width: 80%;
-            margin: 0 auto;
+            margin: auto;
             padding: 20px;
         }
 
-        h1, h2, h3 {
-            color: #D4AF37;
+        h1, h2 {
+            color: #D4AF37; /* Dark gold for titles */
+            font-weight: bold;
+            text-transform: uppercase;
+            border-bottom: 2px solid #D4AF37;
+            padding-bottom: 10px;
         }
 
-        a {
-            text-decoration: none;
-            color: #D4AF37;
-        }
-
-        p, ul, li {
-            line-height: 1.6;
-        }
-
-        ul {
-            padding-left: 20px;
-        }
-
-        /* Profile Section */
-        .profile {
+        .profile, .contact {
             display: flex;
             justify-content: space-between;
-            flex-wrap: wrap;
+            margin-bottom: 30px;
         }
 
-        .profile .contact-info, .profile .personal-info {
-            width: 48%;
+        .contact p {
+            margin: 5px 0;
         }
 
-        /* Mobile Responsiveness */
-        @media (max-width: 768px) {
-            .container {
-                width: 95%;
-            }
-
-            .profile .contact-info, .profile .personal-info {
-                width: 100%;
-                text-align: center;
-            }
-
-            h1 {
-                font-size: 1.8rem;
-            }
-
-            h2 {
-                font-size: 1.5rem;
-            }
-
-            h3 {
-                font-size: 1.3rem;
-            }
-
-            p, li {
-                font-size: 1rem;
-            }
-
-            ul {
-                padding-left: 10px;
-            }
+        .profile h1 {
+            font-size: 2.5em;
+            margin: 0;
         }
 
-        @media (max-width: 480px) {
-            h1 {
-                font-size: 1.5rem;
-            }
+        .profile p {
+            font-size: 1.2em;
+        }
 
-            h2 {
-                font-size: 1.3rem;
-            }
+        .profile-info {
+            flex-basis: 70%;
+        }
 
-            h3 {
-                font-size: 1.1rem;
-            }
+        .contact-info {
+            flex-basis: 30%;
+            text-align: right;
+        }
 
-            p, li {
-                font-size: 0.9rem;
-            }
+        .contact-info p {
+            font-size: 1.1em;
         }
     </style>
 </head>
+
 <body>
+
     <div class="container">
-        <header>
-            <h1>Alberto Villalobos Barboza</h1>
-            <p>GNU Linux/Unix System & AI Engineer | San Jose, Costa Rica</p>
-            <p>Nationality: Costa Rican | Identification: 1-1618-0379</p>
+        <header class="profile">
+            <div class="profile-info">
+                <h1>Alberto Villalobos Barboza</h1>
+                <p>GNU Linux/Unix System & AI Engineer | San Jose, Costa Rica</p>
+                <p>Nationality: Costa Rican</p>
+                <p>Identification: 1-1618-0379</p>
+            </div>
+            <div class="contact-info">
+                <p>Phone: +506 83319414</p>
+                <p>Email: <a href="mailto:amehtvillalobos@gmail.com" style="color: #D4AF37;">amehtvillalobos@gmail.com</a></p>
+            </div>
         </header>
 
-        <section class="profile">
-            <div class="contact-info">
-                <p><strong>Phone:</strong> +506 83319414</p>
-                <p><strong>Email:</strong> amehtvillalobos@gmail.com</p>
-            </div>
-            <div class="personal-info">
-                <p><strong>Profile:</strong></p>
-                <p>As a highly skilled GNU Linux/Unix System and AI Engineer, I have a strong track record of optimizing system management and delivering exceptional customer support. My focus on collaborative teamwork allows me to identify necessary tasks, resources, and deadlines to achieve successful project completion. I am driven to provide comprehensive solutions that meet customers' unique requirements and align with project objectives.</p>
-            </div>
+        <section class="profile-summary">
+            <h2>Profile</h2>
+            <p>
+                As a highly skilled GNU Linux/Unix System and AI Engineer, I have a strong track record of optimizing system management
+                and delivering exceptional customer support. My focus on collaborative teamwork allows me to identify necessary tasks, resources,
+                and deadlines to achieve successful project completion. I am driven to provide comprehensive solutions that meet customers' 
+                unique requirements and align with project objectives.
+            </p>
         </section>
-        <!-- Skills Section -->
-        <section>
+        <section class="skills">
             <h2>Skills</h2>
             <ul>
                 <li>Proficient in Kubernetes for container orchestration, enabling efficient scaling and deployment</li>
@@ -135,8 +104,7 @@
             </ul>
         </section>
 
-        <!-- Certifications Section -->
-        <section>
+        <section class="certifications">
             <h2>Certifications</h2>
             <ul>
                 <li>Oracle Project Management Certified Foundations Associate - 06/10/2024</li>
@@ -153,116 +121,54 @@
                 <li>ITIL Foundation in IT Service Management - 09/29/2019</li>
             </ul>
         </section>
-
-        <!-- GitHub Section -->
-        <section>
+        <section class="github">
             <h2>GitHub</h2>
             <ul>
-                <li><a href="https://github.com/Crono1995/ML">Machine Learning Projects</a></li>
-                <li><a href="https://github.com/Crono1995/AZURE/blob/main/Ansible">ANSIBLE full course – cookbooks</a></li>
-                <li><a href="https://github.com/Crono1995/AZURE/blob/main/Azure-PowerShell-CreateVM">Azure-PowerShell-CreateVM</a></li>
-                <li><a href="https://github.com/Crono1995/AZURE/blob/main/Azure-PowerShell-ResetSSH-settings">Azure-PowerShell-ResetSSH-settings</a></li>
-                <li><a href="https://github.com/Crono1995/AZURE/blob/main/Performance">VM Performance Monitor</a></li>
-                <li><a href="https://github.com/Crono1995/AZURE/blob/main/RHEL-troubleshooter">RHEL RHUIS repos troubleshooter</a></li>
-                <li><a href="https://github.com/Crono1995/AZURE/blob/main/VM-Consults">Multi DISTROs VM's consults</a></li>
-                <li><a href="https://github.com/Crono1995/AZURE/blob/main/logs-errors-finder">LOGS error's finder</a></li>
+                <li><a href="https://github.com/Crono1995/ML" style="color: #D4AF37;">Machine Learning Projects</a></li>
+                <li><a href="https://github.com/Crono1995/AZURE/blob/main/Ansible" style="color: #D4AF37;">ANSIBLE full course – cookbooks</a></li>
+                <li><a href="https://github.com/Crono1995/AZURE/blob/main/Azure-PowerShell-CreateVM" style="color: #D4AF37;">Azure-PowerShell-CreateVM</a></li>
+                <li><a href="https://github.com/Crono1995/AZURE/blob/main/Azure-PowerShell-ResetSSH-settings" style="color: #D4AF37;">Azure-PowerShell-ResetSSH-settings</a></li>
+                <li><a href="https://github.com/Crono1995/AZURE/blob/main/Performance" style="color: #D4AF37;">VM Performance Monitor</a></li>
+                <li><a href="https://github.com/Crono1995/AZURE/blob/main/RHEL-troubleshooter" style="color: #D4AF37;">RHEL RHUIS repos troubleshooter</a></li>
+                <li><a href="https://github.com/Crono1995/AZURE/blob/main/VM-Consults" style="color: #D4AF37;">Multi DISTROs VM's consults</a></li>
+                <li><a href="https://github.com/Crono1995/AZURE/blob/main/logs-errors-finder" style="color: #D4AF37;">LOGS error's finder</a></li>
             </ul>
         </section>
-        <!-- Professional Experience Section -->
-        <section>
+
+        <section class="professional-experience">
             <h2>Professional Experience</h2>
-            <div class="experience">
-                <h3>AI Engineer | Lanshore (UiPath Client)</h3>
-                <p><span class="date">2022 – 2024</span></p>
-                <ul>
-                    <li>Optimized AI system performance by providing technical expertise in troubleshooting and cross-functional collaboration.</li>
-                    <li>Led the streamlining of AI processes while ensuring seamless integration of new technologies.</li>
-                    <li>Played a pivotal role in updating AI documentation, improving user support and enhancing overall efficiency.</li>
-                    <li>Supported the deployment of RPA solutions, driving automation in high-impact areas.</li>
-                </ul>
-            </div>
+            <h3>AI Engineer | Lanshore (UiPath Client) - (2022 – 2024)</h3>
+            <p>Optimized AI system performance by providing technical expertise in troubleshooting and cross-functional collaboration. Led the streamlining of AI processes while ensuring seamless integration of new technologies. Played a pivotal role in updating AI documentation, improving user support and enhancing overall efficiency. Supported the deployment of RPA solutions, driving automation in high-impact areas.</p>
 
-            <div class="experience">
-                <h3>Linux Engineer | Tek Experts (Microsoft Cloud Clients)</h3>
-                <p><span class="date">2020 – 2022</span></p>
-                <ul>
-                    <li>Specialized in Azure Cloud and multi-distro Linux troubleshooting, resolving high-priority issues in system performance.</li>
-                    <li>Focused on PaaS incident management, ensuring uptime and system stability for large-scale enterprise clients.</li>
-                    <li>Spearheaded system reliability enhancements, utilizing expertise across CentOS, RedHat, SUSE, and Ubuntu.</li>
-                    <li>Delivered mission-critical solutions that elevated client satisfaction and operational continuity.</li>
-                </ul>
-            </div>
+            <h3>Linux Engineer | Tek Experts (Microsoft Cloud Clients) - (2020 – 2022)</h3>
+            <p>Specialized in Azure Cloud and multi-distro Linux troubleshooting, resolving high-priority issues in system performance. Focused on PaaS incident management, ensuring uptime and system stability for large-scale enterprise clients. Spearheaded system reliability enhancements, utilizing expertise across CentOS, RedHat, SUSE, and Ubuntu. Delivered mission-critical solutions that elevated client satisfaction and operational continuity.</p>
 
-            <div class="experience">
-                <h3>Splunk Engineer | Sykes (Splunk Client)</h3>
-                <p><span class="date">2019 – 2020</span></p>
-                <ul>
-                    <li>Supported system administrators by providing expert remote technical support for Splunk cloud instances.</li>
-                    <li>Led troubleshooting of complex Regex malfunctions, ensuring operational continuity for large-scale data platforms.</li>
-                    <li>Partnered with clients to develop actionable insights and improve data analysis capabilities.</li>
-                    <li>Enhanced data-driven decision-making by refining system processes and increasing platform reliability.</li>
-                </ul>
-            </div>
+            <h3>Splunk Engineer | Sykes (Splunk Client) - (2019 – 2020)</h3>
+            <p>Supported system administrators by providing expert remote technical support for Splunk cloud instances. Led troubleshooting of complex Regex malfunctions, ensuring operational continuity for large-scale data platforms. Partnered with clients to develop actionable insights and improve data analysis capabilities. Enhanced data-driven decision-making by refining system processes and increasing platform reliability.</p>
 
-            <div class="experience">
-                <h3>Payroll Garnishment Practitioner Administrator | IBM (P&G Client)</h3>
-                <p><span class="date">2017 – 2018</span></p>
-                <ul>
-                    <li>Managed complex payroll processing for U.S. and Canadian entities, ensuring compliance with legal requirements.</li>
-                    <li>Utilized SAP to handle wage garnishments, balancing accuracy with strict deadlines for high-stakes financial operations.</li>
-                    <li>Improved client processes by analyzing workflow efficiency and implementing enhancements.</li>
-                    <li>Reduced payroll discrepancies through meticulous record-keeping and systems alignment.</li>
-                </ul>
-            </div>
+            <h3>Payroll Garnishment Practitioner Administrator | IBM (P&G Client) - (2017 – 2018)</h3>
+            <p>Managed complex payroll processing for U.S. and Canadian entities, ensuring compliance with legal requirements. Utilized SAP to handle wage garnishments, balancing accuracy with strict deadlines for high-stakes financial operations. Improved client processes by analyzing workflow efficiency and implementing enhancements. Reduced payroll discrepancies through meticulous record-keeping and systems alignment.</p>
 
-            <div class="experience">
-                <h3>System Operations Administrator | IBM (Facebook and Chile’s Mining Clients)</h3>
-                <p><span class="date">2015 – 2017</span></p>
-                <ul>
-                    <li>Oversaw daily monitoring of Linux and Windows servers, ensuring consistent system performance and resolving critical incidents.</li>
-                    <li>Led server backup revisions, using Tivoli and Service Desk to enhance system security and data integrity.</li>
-                    <li>Proactively managed server health and uptime, coordinating across teams to maintain operational excellence.</li>
-                    <li>Provided detailed system reporting, streamlining performance management.</li>
-                </ul>
-            </div>
+            <h3>System Operations Administrator | IBM (Facebook and Chile’s Mining Clients) - (2015 – 2017)</h3>
+            <p>Oversaw daily monitoring of Linux and Windows servers, ensuring consistent system performance and resolving critical incidents. Led server backup revisions, using Tivoli and Service Desk to enhance system security and data integrity. Proactively managed server health and uptime, coordinating across teams to maintain operational excellence. Provided detailed system reporting, streamlining performance management.</p>
 
-            <div class="experience">
-                <h3>IT Service Desk Delivery | IBM (Various Clients)</h3>
-                <p><span class="date">2014 – 2015</span></p>
-                <ul>
-                    <li>Delivered end-user support to commercial accounts, resolving diverse technical issues swiftly and accurately.</li>
-                    <li>Handled service desk requests through multiple channels, ensuring seamless technical operations.</li>
-                    <li>Played a crucial role in troubleshooting hardware and software issues.</li>
-                    <li>Provided superior customer service, increasing client satisfaction across various industries.</li>
-                </ul>
-            </div>
+            <h3>IT Service Desk Delivery | IBM (Various Clients) - (2014 – 2015)</h3>
+            <p>Delivered end-user support to commercial accounts, resolving diverse technical issues swiftly and accurately. Handled service desk requests through multiple channels, ensuring seamless technical operations. Played a crucial role in troubleshooting hardware and software issues. Provided superior customer service, increasing client satisfaction across various industries.</p>
 
-            <div class="experience">
-                <h3>Technical Support Specialist | Banco Nacional de Costa Rica</h3>
-                <p><span class="date">2013</span></p>
-                <ul>
-                    <li>Delivered comprehensive IT support, troubleshooting hardware and software issues for multiple departments.</li>
-                    <li>Ensured the smooth daily operations of critical systems, responding rapidly to incidents.</li>
-                    <li>Managed on-site technical problems, implementing solutions that minimized downtime and maximized efficiency for banking staff.</li>
-                    <li>Provided preventative maintenance, reducing recurring issues.</li>
-                </ul>
-            </div>
+            <h3>Technical Support Specialist | Banco Nacional de Costa Rica - (2013)</h3>
+            <p>Delivered comprehensive IT support, troubleshooting hardware and software issues for multiple departments. Ensured the smooth daily operations of critical systems, responding rapidly to incidents. Managed on-site technical problems, implementing solutions that minimized downtime and maximized efficiency for banking staff. Provided preventative maintenance, reducing recurring issues.</p>
         </section>
 
-        <!-- Education Section -->
-        <section>
+        <section class="education">
             <h2>Education</h2>
             <ul>
-                <li>Linux Engineer Academy | Greencore (2019)</li>
-                <li>English Academy C1 level | Sykes (2019)</li>
-                <li>Technical Software Development | Colegio Técnico Profesional de Granadilla (2011 – 2013)</li>
-                <li>Degree in secondary education | Colegio Técnico Profesional de Granadilla (2011 – 2013)</li>
+                <li>2019-2019: Greencore - Linux Engineer Academy</li>
+                <li>2019-2019: Sykes - English Academy C1 level</li>
+                <li>2011-2013: Colegio Técnico Profesional de Granadilla - Technical Software Development</li>
+                <li>2011-2013: Colegio Técnico Profesional de Granadilla - Degree in Secondary Education</li>
             </ul>
         </section>
-    </main>
+    </div>
+</body>
 
-    <!-- Footer -->
-    <footer>
-        <p>&copy; 2024 Alberto Villalobos Barboza</p>
-    </footer>
-</div>
+</html>
