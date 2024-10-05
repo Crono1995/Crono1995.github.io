@@ -3,83 +3,74 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>Alberto Villalobos Barboza - CV</title>
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Alberto Villalobos Barboza | GNU Linux/Unix System & AI Engineer</title>
     <style>
         body {
-            font-family: 'Arial', sans-serif;
+            font-family: Arial, sans-serif;
             background-color: #121212;
             color: #ffffff;
             margin: 0;
             padding: 0;
-            line-height: 1.6;
         }
         .container {
             width: 80%;
-            margin: 0 auto;
+            margin: auto;
             padding: 20px;
         }
-        h1, h2 {
-            color: #00cc66;
-            border-bottom: 2px solid #00cc66;
-            padding-bottom: 10px;
+        h1, h2, h3 {
+            color: #00ff00;
         }
-        h1 {
-            font-size: 2.5rem;
+        a {
+            color: #00ff00;
+            text-decoration: none;
         }
-        h2 {
-            font-size: 1.8rem;
+        a:hover {
+            text-decoration: underline;
         }
-        p, ul {
-            font-size: 1rem;
-            margin: 10px 0;
+        .profile, .skills, .certifications, .experience, .education, .github-link {
+            margin-bottom: 40px;
+            padding: 20px;
+            background-color: #1c1c1c;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
         }
         ul {
             list-style-type: none;
-            padding-left: 0;
+            padding: 0;
         }
-        ul li::before {
-            content: "";
-            color: #00cc66;
-            font-weight: bold;
-            display: inline-block; 
-            width: 1em;
-            margin-left: -1em;
+        li {
+            padding: 5px 0;
         }
-        .contact-info, .skills, .certifications, .experience {
-            margin-bottom: 20px;
+        h1 {
+            text-align: center;
+            font-size: 36px;
+            margin-bottom: 10px;
         }
         .contact-info {
-            font-size: 1.2rem;
+            text-align: center;
+            font-size: 18px;
         }
-        .github-link a {
-            color: #00cc66;
-            text-decoration: none;
-            font-weight: bold;
-        }
-        .github-link a:hover {
-            text-decoration: underline;
+        .contact-info p {
+            margin: 5px 0;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <header>
-            <h1>Alberto Villalobos Barboza</h1>
-            <p class="contact-info">
-                GNU Linux/Unix System & AI Engineer | San Jose, Costa Rica<br>
-                Nationality: Costa Rican | Identification: 1-1618-0379<br>
-                Phone: +506 83319414 | Email: <a href="mailto:amehtvillalobos@gmail.com">amehtvillalobos@gmail.com</a>
-            </p>
-        </header>
+        <h1>Alberto Villalobos Barboza</h1>
+        <div class="contact-info">
+            <p>GNU Linux/Unix System & AI Engineer | San Jose, Costa Rica</p>
+            <p>Nationality: Costa Rican | Identification: 1-1618-0379</p>
+            <p>Phone: +506 83319414 | Email: <a href="mailto:amehtvillalobos@gmail.com">amehtvillalobos@gmail.com</a></p>
+        </div>
 
         <section class="profile">
             <h2>Profile</h2>
             <p>
-                As a highly skilled GNU Linux/Unix System and AI Engineer, I have a strong track record of optimizing system management 
-                and delivering exceptional customer support. My focus on collaborative teamwork allows me to identify necessary tasks, 
-                resources, and deadlines to achieve successful project completion. I am driven to provide comprehensive solutions that 
-                meet customers' unique requirements and align with project objectives.
+                As a highly skilled GNU Linux/Unix System and AI Engineer, I have a strong track record of optimizing system management and delivering exceptional customer support. 
+                My focus on collaborative teamwork allows me to identify necessary tasks, resources, and deadlines to achieve successful project completion. 
+                I am driven to provide comprehensive solutions that meet customers' unique requirements and align with project objectives.
             </p>
         </section>
 
@@ -96,8 +87,8 @@
                 <li>Highly customer-oriented, with excellent team collaboration and communication skills</li>
                 <li>Expert in AI-based system optimization and integration of cutting-edge technologies</li>
                 <li>Knowledge of SAP Basis for effective SAP system management, and experience as SAP end-user</li>
-                <li>Proficient in multi-platform server management (VMware) and Azure cloud administration</li>
             </ul>
+        </section>
         </section>
 
         <section class="certifications">
@@ -124,7 +115,7 @@
                 <li><a href="https://github.com/Crono1995/ML" target="_blank">Machine Learning Projects</a></li>
                 <li><a href="https://github.com/Crono1995/AZURE/blob/main/Ansible" target="_blank">ANSIBLE full course – cookbooks</a></li>
                 <li><a href="https://github.com/Crono1995/AZURE/blob/main/Azure-PowerShell-CreateVM" target="_blank">Azure-PowerShell-CreateVM</a></li>
-                <li><a href="https://github.com/Crono1995/AZURE/blob/main/Azure-PowerShell-Reset" target="_blank">Azure-PowerShell-ResetSSH-settings</a></li>
+                <li><a href="https://github.com/Crono1995/AZURE/blob/main/Azure-PowerShell-ResetSSH-settings" target="_blank">Azure-PowerShell-ResetSSH-settings</a></li>
                 <li><a href="https://github.com/Crono1995/AZURE/blob/main/Performance" target="_blank">VM Performance Monitor</a></li>
                 <li><a href="https://github.com/Crono1995/AZURE/blob/main/RHEL-troubleshooter" target="_blank">RHEL RHUIS repos troubleshooter</a></li>
                 <li><a href="https://github.com/Crono1995/AZURE/blob/main/VM-Consults" target="_blank">Multi DISTROs VM's consults</a></li>
@@ -136,47 +127,68 @@
             <h2>Professional Experience</h2>
             <h3>AI Engineer | Lanshore (UiPath Client) - (2022 – 2024)</h3>
             <p>
-                Optimized AI system performance by providing technical expertise in troubleshooting and cross-functional collaboration. Led the streamlining of AI processes while ensuring seamless integration of new technologies. Played a pivotal role in updating AI documentation, improving user support, and enhancing overall efficiency. Supported the deployment of RPA solutions, driving automation in high-impact areas.
+                Optimized AI system performance by providing technical expertise in troubleshooting and cross-functional collaboration. 
+                Led the streamlining of AI processes while ensuring seamless integration of new technologies. 
+                Played a pivotal role in updating AI documentation, improving user support, and enhancing overall efficiency. 
+                Supported the deployment of RPA solutions, driving automation in high-impact areas.
             </p>
 
             <h3>Linux Engineer | Tek Experts (Microsoft Cloud Clients) - (2020 – 2022)</h3>
             <p>
-                Specialized in Azure Cloud and multi-distro Linux troubleshooting, resolving high-priority issues in system performance. Focused on PaaS incident management, ensuring uptime and system stability for large-scale enterprise clients. Spearheaded system reliability enhancements, utilizing expertise across CentOS, RedHat, SUSE, and Ubuntu. Delivered mission-critical solutions that elevated client satisfaction and operational continuity.
+                Specialized in Azure Cloud and multi-distro Linux troubleshooting, resolving high-priority issues in system performance. 
+                Focused on PaaS incident management, ensuring uptime and system stability for large-scale enterprise clients. 
+                Spearheaded system reliability enhancements, utilizing expertise across CentOS, RedHat, SUSE, and Ubuntu. 
+                Delivered mission-critical solutions that elevated client satisfaction and operational continuity.
             </p>
 
             <h3>Splunk Engineer | Sykes (Splunk Client) - (2019 – 2020)</h3>
             <p>
-                Supported system administrators by providing expert remote technical support for Splunk cloud instances. Led troubleshooting of complex Regex malfunctions, ensuring operational continuity for large-scale data platforms. Partnered with clients to develop actionable insights and improve data analysis capabilities. Enhanced data-driven decision-making by refining system processes and increasing platform reliability.
+                Supported system administrators by providing expert remote technical support for Splunk cloud instances. 
+                Led troubleshooting of complex Regex malfunctions, ensuring operational continuity for large-scale data platforms. 
+                Partnered with clients to develop actionable insights and improve data analysis capabilities. 
+                Enhanced data-driven decision-making by refining system processes and increasing platform reliability.
             </p>
 
             <h3>Payroll Garnishment Practitioner Administrator | IBM (P&G Client) - (2017 – 2018)</h3>
             <p>
-                Managed complex payroll processing for U.S. and Canadian entities, ensuring compliance with legal requirements. Utilized SAP to handle wage garnishments, balancing accuracy with strict deadlines for high-stakes financial operations. Improved client processes by analyzing workflow efficiency and implementing enhancements. Reduced payroll discrepancies through meticulous record-keeping and systems alignment.
+                Managed complex payroll processing for U.S. and Canadian entities, ensuring compliance with legal requirements. 
+                Utilized SAP to handle wage garnishments, balancing accuracy with strict deadlines for high-stakes financial operations. 
+                Improved client processes by analyzing workflow efficiency and implementing enhancements. 
+                Reduced payroll discrepancies through meticulous record-keeping and systems alignment.
             </p>
 
             <h3>System Operations Administrator | IBM (Facebook and Chile’s Mining Clients) - (2015 – 2017)</h3>
             <p>
-                Oversaw daily monitoring of Linux and Windows servers, ensuring consistent system performance and resolving critical incidents. Led server backup revisions, using Tivoli and Service Desk to enhance system security and data integrity. Proactively managed server health and uptime, coordinating across teams to maintain operational excellence. Provided detailed system reporting, streamlining performance management.
+                Oversaw daily monitoring of Linux and Windows servers, ensuring consistent system performance and resolving critical incidents. 
+                Led server backup revisions, using Tivoli and Service Desk to enhance system security and data integrity. 
+                Proactively managed server health and uptime, coordinating across teams to maintain operational excellence. 
+                Provided detailed system reporting, streamlining performance management.
             </p>
 
             <h3>IT Service Desk Delivery | IBM (Various Clients) - (2014 – 2015)</h3>
             <p>
-                Delivered end-user support to commercial accounts, resolving diverse technical issues swiftly and accurately. Handled service desk requests through multiple channels, ensuring seamless technical operations. Played a crucial role in troubleshooting hardware and software issues. Provided superior customer service, increasing client satisfaction across various industries.
+                Delivered end-user support to commercial accounts, resolving diverse technical issues swiftly and accurately. 
+                Handled service desk requests through multiple channels, ensuring seamless technical operations. 
+                Played a crucial role in troubleshooting hardware and software issues. 
+                Provided superior customer service, increasing client satisfaction across various industries.
             </p>
 
             <h3>Technical Support Specialist | Banco Nacional de Costa Rica - (2013)</h3>
             <p>
-                Delivered comprehensive IT support, troubleshooting hardware and software issues for multiple departments. Ensured the smooth daily operations of critical systems, responding rapidly to incidents. Managed on-site technical problems, implementing solutions that minimized downtime and maximized efficiency for banking staff. Provided preventative maintenance, reducing recurring issues.
+                Delivered comprehensive IT support, troubleshooting hardware and software issues for multiple departments. 
+                Ensured the smooth daily operations of critical systems, responding rapidly to incidents. 
+                Managed on-site technical problems, implementing solutions that minimized downtime and maximized efficiency for banking staff. 
+                Provided preventative maintenance, reducing recurring issues.
             </p>
         </section>
 
         <section class="education">
             <h2>Education</h2>
             <ul>
-                <li>Greencore, Linux Engineer Academy - 2019</li>
-                <li>Sykes, English Academy C1 Level - 2019</li>
-                <li>Colegio Técnico Profesional de Granadilla, Technical Software Development - 2011-2013</li>
-                <li>Colegio Técnico Profesional de Granadilla, Degree in Secondary Education - 2011-2013</li>
+                <li>Greencore - Linux Engineer Academy, 2019</li>
+                <li>Sykes - English Academy C1 level, 2019</li>
+                <li>Colegio Técnico Profesional de Granadilla - Technical Software Development, 2011-2013</li>
+                <li>Colegio Técnico Profesional de Granadilla - Degree in secondary education, 2011-2013</li>
             </ul>
         </section>
 
