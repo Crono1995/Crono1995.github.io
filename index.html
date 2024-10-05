@@ -3,131 +3,144 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CV - Alberto Villalobos Barboza</title>
+    <title>Alberto Villalobos Barboza - CV</title>
     <style>
-        /* Importing fonts */
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Roboto:wght@400;500&display=swap');
-        
         body {
-            background: linear-gradient(135deg, #1c1c1c, #111111);
+            font-family: 'Arial', sans-serif;
+            background-color: #121212;
             color: #f5f5f5;
-            font-family: 'Roboto', sans-serif;
             margin: 0;
             padding: 0;
+            line-height: 1.6;
         }
+
         .container {
             width: 80%;
             margin: 0 auto;
             padding: 2rem 0;
         }
+
         header {
             text-align: center;
-            padding: 2rem 0;
+            padding: 2rem;
             border-bottom: 2px solid #444;
         }
+
         header h1 {
-            font-family: 'Playfair Display', serif;
-            color: #e0e0e0;
-            font-size: 2.7rem;
-            margin-bottom: 0.3rem;
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            color: #ffffff;
         }
+
         header p {
-            color: #bdbdbd;
             font-size: 1.2rem;
+            color: #bdbdbd;
         }
+
         .section-title {
-            font-family: 'Playfair Display', serif;
-            font-size: 1.9rem;
-            color: #ffa726;
-            margin: 2.5rem 0 1rem;
-            transition: color 0.3s;
+            font-size: 1.8rem;
+            color: #f5f5f5;
+            border-bottom: 1px solid #777;
+            padding-bottom: 0.5rem;
+            margin-top: 2rem;
         }
-        .section-title:hover {
-            color: #ffb74d;
+
+        .section-content {
+            margin: 1.5rem 0;
         }
-        .content p, .content ul {
-            margin-left: 1rem;
-            margin-bottom: 1.5rem;
-        }
-        .content ul {
+
+        ul.skills-list {
             list-style-type: none;
+            padding: 0;
         }
-        .content ul li::before {
-            content: "➢";
-            color: #f57c00;
+
+        ul.skills-list li::before {
+            content: "➤";
+            color: #ffa726;
             padding-right: 0.5rem;
         }
-        a {
+
+        ul {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        ul li {
+            padding: 0.5rem 0;
+        }
+
+        .github-link {
             color: #81d4fa;
             text-decoration: none;
-            transition: color 0.3s ease;
         }
-        a:hover {
+
+        .github-link:hover {
             color: #29b6f6;
         }
-        /* Button-style for GitHub links */
-        .github-btn {
-            display: inline-block;
-            background-color: #1976d2;
-            color: white;
-            padding: 0.5rem 1rem;
-            border-radius: 5px;
-            margin-top: 0.5rem;
-            text-align: center;
-            transition: background-color 0.3s ease;
-        }
-        .github-btn:hover {
-            background-color: #1565c0;
-        }
+
         footer {
             text-align: center;
-            padding: 2rem 0;
+            padding: 2rem;
+            background-color: #1e1e1e;
             color: #616161;
             font-size: 0.9rem;
         }
+
+        a {
+            color: #81d4fa;
+            text-decoration: none;
+        }
+
+        a:hover {
+            color: #29b6f6;
+        }
+
         /* Responsive Design for Mobile */
         @media screen and (max-width: 768px) {
             .container {
                 width: 95%;
                 padding: 1rem;
             }
+
             header h1 {
-                font-size: 2.2rem;
+                font-size: 2rem;
             }
-            header p {
-                font-size: 1rem;
-            }
+
             .section-title {
                 font-size: 1.5rem;
-                margin-top: 1.5rem;
-            }
-            footer {
-                font-size: 0.8rem;
             }
         }
     </style>
 </head>
 <body>
     <div class="container">
+        <!-- Header Section -->
         <header>
             <h1>Alberto Villalobos Barboza</h1>
             <p>GNU Linux/Unix System & AI Engineer | San Jose, Costa Rica</p>
+            <p>Nationality: Costa Rican | Identification: 1-1618-0379</p>
             <p>Email: <a href="mailto:amehtvillalobos@gmail.com">amehtvillalobos@gmail.com</a> | Phone: +506 83319414</p>
         </header>
 
+        <!-- Profile Section -->
         <section>
             <h2 class="section-title">Profile</h2>
-            <div class="content">
+            <div class="section-content">
                 <p>
                     As a highly skilled GNU Linux/Unix System and AI Engineer, I have a strong track record of optimizing system management and delivering exceptional customer support. My focus on collaborative teamwork allows me to identify necessary tasks, resources, and deadlines to achieve successful project completion. I am driven to provide comprehensive solutions that meet customers' unique requirements and align with project objectives.
                 </p>
             </div>
         </section>
 
+        <!-- Skills Section -->
         <section>
             <h2 class="section-title">Skills</h2>
-            <div class="content">
-                <ul>
+            <div class="section-content">
+                <ul class="skills-list">
+                    <li>Proficient in Kubernetes for container orchestration, enabling efficient scaling and deployment</li>
+                    <li>Experience with Ansible, automating infrastructure configuration and management across multiple platforms</li>
+                    <li>Docker expertise for containerization, streamlining development, deployment, and testing environments</li>
                     <li>Proficient in multi-platform server management (VMware) and Azure cloud administration</li>
                     <li>Advanced Linux troubleshooting, network and storage management, service configuration</li>
                     <li>Bash scripting for automation and task management</li>
@@ -139,90 +152,19 @@
             </div>
         </section>
 
+        <!-- Certifications Section -->
         <section>
             <h2 class="section-title">Certifications</h2>
-            <div class="content">
+            <div class="section-content">
                 <ul>
-                    <li>Oracle Project Management Certified Foundations Associate</li>
-                    <li>Oracle Cloud Data Management 2023 Certified Foundations Associate</li>
-                    <li>Oracle Cloud Infrastructure AI Certified Foundations Associate</li>
-                    <li>Oracle Cloud Infrastructure Certified Foundations Associate</li>
-                    <li>Certified Kubernetes Administrator (CKA)</li>
-                    <li>Technical AI Support Engineer</li>
-                    <li>Azure Linux Specialist (AZLS)</li>
-                    <li>Azure Linux Foundation (AZLF)</li>
-                    <li>Azure VMs L200 Certification</li>
-                    <li>Azure VMs L100 Certification</li>
-                    <li>Linux Foundation Certified System Administrator (LFCS)</li>
-                    <li>ITIL Foundation in IT Service Management</li>
+                    <li>Oracle Project Management Certified Foundations Associate - 06/10/2024</li>
+                    <li>Oracle Cloud Data Management 2023 Certified Foundations Associate - 04/23/2024</li>
+                    <li>Oracle Cloud Infrastructure AI Certified Foundations Associate - 04/02/2024</li>
+                    <li>Certified Kubernetes Administrator (CKA) - 01/02/2023</li>
+                    <li>Technical AI Support Engineer - 04/25/2022</li>
+                    <li>Azure Linux Specialist (AZLS) - 01/28/2021</li>
+                    <li>Linux Foundation Certified System Administrator (LFCS) - 11/15/2020</li>
+                    <li>ITIL Foundation in IT Service Management - 09/29/2019</li>
                 </ul>
             </div>
-        </section>
-
-        <section>
-            <h2 class="section-title">GitHub Projects</h2>
-            <div class="content">
-                <ul>
-                    <li>Machine Learning Project: <a href="https://github.com/Crono1995/ML" class="github-btn" target="_blank">View here</a></li>
-                </ul>
-            </div>
-        </section>
-
-        <section>
-            <h2 class="section-title">Professional Experience</h2>
-            <div class="content">
-                <h3>AI Engineer & RPA Developer - Lanshore (UiPath Client) (2022 – 2023)</h3>
-                <p>
-                    Supported AI systems by troubleshooting and providing technical guidance. Collaborated with multiple teams to assess and resolve AI-related issues.
-                    Played a key role in system optimization and updating AI documentation for clients.
-                </p>
-                <h3>Linux Engineer - Tek Experts (Microsoft Cloud Clients) (2020 – 2022)</h3>
-                <p>
-                    Delivered Azure Cloud support specializing in Linux System Administration and resolved critical PaaS incidents. 
-                    Provided in-depth troubleshooting across major Linux distributions on Azure, improving system reliability.
-                </p>
-                <h3>System Operations Administrator - IBM (Facebook and Chile’s Mining Clients) (2015 – 2016)</h3>
-                <p>
-                    Managed daily server health and incident tickets using Tivoli and Service Desk tools. 
-                    Monitored Linux and Windows servers while performing backups and system reporting to maintain system uptime.
-                </p>
-                <h3>Splunk Engineer - Sykes (Splunk Client) (2019 – 2020)</h3>
-                <p>
-                    Provided technical support for Splunk cloud instances, troubleshooting Regex malfunctions remotely. 
-                    Collaborated with customers to offer solutions and improve data insights.
-                </p>
-                <h3>Payroll Garnishment Practitioner Administrator - IBM (P&G Client) (2017 – 2018)</h3>
-                <p>
-                    Managed payroll and wage deductions using SAP for multiple US states and Canada. 
-                    Ensured compliance and accuracy in all payroll transactions and client operations.
-                </p>
-                <h3>IT Service Desk Delivery - IBM (Various Clients) (2014 – 2015)</h3>
-                <p>
-                    Provided technical support to commercial accounts, resolving incidents and requests efficiently. 
-                    Delivered excellent customer service while managing diverse technical issues.
-                </p>
-                <h3>Technical Support Specialist - Banco Nacional de Costa Rica (2013)</h3>
-                <p>
-                    Offered IT support for hardware and software, troubleshooting issues across multiple departments. 
-                    Managed on-site technical problems, ensuring smooth daily operations for staff.
-                </p>
-            </div>
-        </section>
-
-        <section>
-            <h2 class="section-title">Education</h2>
-            <div class="content">
-                <ul>
-                    <li>Linux Admin Academy (2019)</li>
-                    <li>Technical Software Development, Colegio Técnico Profesional de Granadilla (2013)</li>
-                    <li>English Academy B2+ level, Colegio Técnico Profesional de Granadilla (2011)</li>
-                </ul>
-            </div>
-        </section>
-
-        <footer>
-            <p>&copy; 2024 Alberto Villalobos Barboza | San Jose, Costa Rica</p>
-        </footer>
-    </div>
-</body>
-</html>
+        </section
