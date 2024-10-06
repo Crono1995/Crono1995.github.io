@@ -7,58 +7,64 @@
     <title>Alberto Villalobos Barboza - CV</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background-color: #000; /* Black background */
-            color: #fff; /* White text */
+            font-family: 'Helvetica Neue', sans-serif;
+            background: linear-gradient(135deg, #121212, #1e1e1e); /* Gradient background for modern feel */
+            color: #e0e0e0; /* Soft white for text */
             margin: 0;
             padding: 0;
-            line-height: 1.6;
+            line-height: 1.8;
         }
 
         .container {
-            width: 80%;
+            width: 85%;
             margin: auto;
-            padding: 20px;
+            padding: 30px 20px;
+            background: rgba(255, 255, 255, 0.03); /* Semi-transparent background for content sections */
+            box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.5); /* Soft shadow for a polished look */
+            border-radius: 10px; /* Rounded corners */
         }
 
         h1, h2 {
-            color: #FFD700; /* Bright yellow for titles */
+            color: #FFD700; /* Bright gold for titles */
             font-weight: bold;
-            text-transform: uppercase;
-            border-bottom: 2px solid #FFD700;
+            letter-spacing: 1px;
             padding-bottom: 10px;
+            border-bottom: 3px solid #FFD700;
+            text-transform: uppercase;
+            margin-bottom: 20px;
         }
 
         .profile, .contact {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 30px;
-        }
-
-        .contact p {
-            margin: 5px 0;
+            align-items: center;
+            margin-bottom: 40px;
         }
 
         .profile h1 {
-            font-size: 2.5em;
+            font-size: 3em;
             margin: 0;
+            color: #FFD700;
         }
 
         .profile p {
-            font-size: 1.2em;
+            font-size: 1.4em;
+            color: #e0e0e0;
         }
 
         .profile-info {
-            flex-basis: 70%;
+            flex: 2;
         }
 
         .contact-info {
-            flex-basis: 30%;
+            flex: 1;
             text-align: right;
         }
 
         .contact-info p {
             font-size: 1.1em;
+            color: #FFD700;
+            margin: 0;
         }
 
         a {
@@ -68,6 +74,23 @@
 
         a:hover {
             text-decoration: underline;
+        }
+
+        /* Button styling */
+        .cta-button {
+            display: inline-block;
+            padding: 10px 20px;
+            margin-top: 20px;
+            color: #000;
+            background-color: #FFD700;
+            border-radius: 5px;
+            text-transform: uppercase;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        .cta-button:hover {
+            background-color: #ffcc33;
         }
     </style>
 </head>
@@ -81,11 +104,14 @@
                 <p>GNU Linux/Unix System & AI Engineer | San Jose, Costa Rica</p>
                 <p>Nationality: Costa Rican</p>
                 <p>Identification: 1-1618-0379</p>
-				<p>Phone: +506 83319414</p>
-                <p>Email: <a href="mailto:amehtvillalobos@gmail.com" style="color: #FFD700;">amehtvillalobos@gmail.com</a></p>
+            </div>
+
+            <div class="contact-info">
+                <p>Phone: +506 83319414</p>
+                <p>Email: <a href="mailto:amehtvillalobos@gmail.com">amehtvillalobos@gmail.com</a></p>
             </div>
         </header>
-
+        <!-- Profile Summary Section -->
         <section class="profile-summary">
             <h2>Profile</h2>
             <p>
@@ -95,6 +121,8 @@
                 unique requirements and align with project objectives.
             </p>
         </section>
+
+        <!-- Skills Section -->
         <section class="skills">
             <h2>Skills</h2>
             <ul>
@@ -111,6 +139,7 @@
             </ul>
         </section>
 
+        <!-- Certifications Section -->
         <section class="certifications">
             <h2>Certifications</h2>
             <ul>
@@ -129,21 +158,27 @@
             </ul>
         </section>
 
+        <!-- GitHub Section -->
         <section class="github">
             <h2>GitHub</h2>
             <ul>
-                <li><a href="https://github.com/Crono1995/ML" style="color: #FFD700;">Machine Learning Projects</a></li>
-                <li><a href="https://github.com/Crono1995/AZURE/blob/main/Ansible" style="color: #FFD700;">ANSIBLE full course – cookbooks</a></li>
-                <li><a href="https://github.com/Crono1995/AZURE/blob/main/Azure-PowerShell-CreateVM" style="color: #FFD700;">Azure-PowerShell-CreateVM</a></li>
-                <li><a href="https://github.com/Crono1995/AZURE/blob/main/Azure-PowerShell-ResetSSH-settings" style="color: #FFD700;">Azure-PowerShell-ResetSSH-settings</a></li>
-                <li><a href="https://github.com/Crono1995/AZURE/blob/main/Performance" style="color: #FFD700;">VM Performance Monitor</a></li>
-                <li><a href="https://github.com/Crono1995/AZURE/blob/main/RHEL-troubleshooter" style="color: #FFD700;">RHEL RHUIS repos troubleshooter</a></li>
-                <li><a href="https://github.com/Crono1995/AZURE/blob/main/VM-Consults" style="color: #FFD700;">Multi DISTROs VM's consults</a></li>
-                <li><a href="https://github.com/Crono1995/AZURE/blob/main/logs-errors-finder" style="color: #FFD700;">LOGS error's finder</a></li>
+                <li><a href="https://github.com/Crono1995/ML">Machine Learning Projects</a></li>
+                <li><a href="https://github.com/Crono1995/AZURE/blob/main/Ansible">ANSIBLE full course – cookbooks</a></li>
+                <li><a href="https://github.com/Crono1995/AZURE/blob/main/Azure-PowerShell-CreateVM">Azure-PowerShell-CreateVM</a></li>
+                <li><a href="https://github.com/Crono1995/AZURE/blob/main/Azure-PowerShell-ResetSSH-settings">Azure-PowerShell-ResetSSH-settings</a></li>
+                <li><a href="https://github.com/Crono1995/AZURE/blob/main/Performance">VM Performance Monitor</a></li>
+                <li><a href="https://github.com/Crono1995/AZURE/blob/main/RHEL-troubleshooter">RHEL RHUIS repos troubleshooter</a></li>
+                <li><a href="https://github.com/Crono1995/AZURE/blob/main/VM-Consults">Multi DISTROs VM's consults</a></li>
+                <li><a href="https://github.com/Crono1995/AZURE/blob/main/logs-errors-finder">LOGS error's finder</a></li>
             </ul>
         </section>
+    </div>
+</body>
+</html>
+        <!-- Professional Experience Section -->
         <section class="professional-experience">
             <h2>Professional Experience</h2>
+
             <h3>AI Engineer | Lanshore (UiPath Client) - (2022 – 2024)</h3>
             <p>
                 Optimized AI system performance by providing technical expertise in troubleshooting and cross-functional collaboration.
@@ -195,6 +230,7 @@
             </p>
         </section>
 
+        <!-- Education Section -->
         <section class="education">
             <h2>Education</h2>
             <ul>
@@ -204,6 +240,7 @@
                 <li>2011-2013: Colegio Técnico Profesional de Granadilla - Degree in Secondary Education</li>
             </ul>
         </section>
+
     </div>
 </body>
 
