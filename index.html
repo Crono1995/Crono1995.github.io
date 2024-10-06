@@ -16,10 +16,9 @@
         }
 
         .container {
-            width: 90%;
+            width: 80%;
             margin: auto;
             padding: 20px;
-            max-width: 1200px; /* Ensure it looks good on larger screens */
         }
 
         h1, h2 {
@@ -32,49 +31,40 @@
 
         .profile, .contact {
             display: flex;
-            flex-direction: column; /* Stacks items for better mobile compatibility */
+            justify-content: space-between;
             margin-bottom: 30px;
         }
 
-        .profile h1 {
-            font-size: 2.2em;
-            margin: 0;
-            text-align: center; /* Center the name on mobile */
-        }
-
-        .profile p, .contact p {
-            font-size: 1.2em;
-            text-align: center; /* Center profile details on mobile */
+        .contact p {
             margin: 5px 0;
         }
 
+        .profile h1 {
+            font-size: 2.5em;
+            margin: 0;
+        }
+
+        .profile p {
+            font-size: 1.2em;
+        }
+
         .profile-info {
-            text-align: center;
+            flex-basis: 70%;
         }
 
-        .contact-info a {
-            color: #D4AF37;
-            text-decoration: none;
+        .contact-info {
+            flex-basis: 30%;
+            text-align: right;
         }
 
-        @media (min-width: 768px) {
-            .profile, .contact {
-                flex-direction: row;
-                justify-content: space-between;
-            }
-
-            .profile-info, .contact-info {
-                flex-basis: 45%;
-            }
-
-            .profile-info h1, .contact-info p {
-                text-align: left;
-            }
+        .contact-info p {
+            font-size: 1.1em;
         }
     </style>
 </head>
 
 <body>
+
     <div class="container">
         <header class="profile">
             <div class="profile-info">
@@ -85,7 +75,7 @@
             </div>
             <div class="contact-info">
                 <p>Phone: +506 83319414</p>
-                <p>Email: <a href="mailto:amehtvillalobos@gmail.com">amehtvillalobos@gmail.com</a></p>
+                <p>Email: <a href="mailto:amehtvillalobos@gmail.com" style="color: #D4AF37;">amehtvillalobos@gmail.com</a></p>
             </div>
         </header>
 
@@ -117,21 +107,20 @@
         <section class="certifications">
             <h2>Certifications</h2>
             <ul>
-                <li>Oracle Project Management Certified Foundations Associate</li>
-                <li>Oracle Cloud Data Management 2023 Certified Foundations Associate</li>
-                <li>Oracle Cloud Infrastructure AI Certified Foundations Associate</li>
-                <li>Oracle Cloud Infrastructure Certified Foundations Associate</li>
-                <li>Certified Kubernetes Administrator (CKA)</li>
-                <li>Technical AI Support Engineer</li>
-                <li>Azure Linux Specialist (AZLS)</li>
-                <li>Azure Linux Foundation (AZLF)</li>
-                <li>Azure VMs L200 Certification</li>
-                <li>Azure VMs L100 Certification</li>
-                <li>Linux Foundation Certified System Administrator (LFCS)</li>
-                <li>ITIL Foundation in IT Service Management</li>
+                <li>Oracle Project Management Certified Foundations Associate - 06/10/2024</li>
+                <li>Oracle Cloud Data Management 2023 Certified Foundations Associate - 04/23/2024</li>
+                <li>Oracle Cloud Infrastructure AI Certified Foundations Associate - 04/02/2024</li>
+                <li>Oracle Cloud Infrastructure Certified Foundations Associate - 04/02/2024</li>
+                <li>Certified Kubernetes Administrator (CKA) - 01/02/2023</li>
+                <li>Technical AI Support Engineer - 04/25/2022</li>
+                <li>Azure Linux Specialist (AZLS) - 01/28/2021</li>
+                <li>Azure Linux Foundation (AZLF) - 01/08/2021</li>
+                <li>Azure VMs L200 Certification - 04/18/2021</li>
+                <li>Azure VMs L100 Certification - 01/08/2021</li>
+                <li>Linux Foundation Certified System Administrator (LFCS) - 11/15/2020</li>
+                <li>ITIL Foundation in IT Service Management - 09/29/2019</li>
             </ul>
         </section>
-
         <section class="github">
             <h2>GitHub</h2>
             <ul>
@@ -146,88 +135,40 @@
             </ul>
         </section>
 
-        <style>
-            /* Mobile-first styling */
-            ul {
-                padding-left: 20px;
-                line-height: 1.8;
-            }
+        <section class="professional-experience">
+            <h2>Professional Experience</h2>
+            <h3>AI Engineer | Lanshore (UiPath Client) - (2022 – 2024)</h3>
+            <p>Optimized AI system performance by providing technical expertise in troubleshooting and cross-functional collaboration. Led the streamlining of AI processes while ensuring seamless integration of new technologies. Played a pivotal role in updating AI documentation, improving user support and enhancing overall efficiency. Supported the deployment of RPA solutions, driving automation in high-impact areas.</p>
 
-            ul li {
-                margin-bottom: 10px;
-            }
+            <h3>Linux Engineer | Tek Experts (Microsoft Cloud Clients) - (2020 – 2022)</h3>
+            <p>Specialized in Azure Cloud and multi-distro Linux troubleshooting, resolving high-priority issues in system performance. Focused on PaaS incident management, ensuring uptime and system stability for large-scale enterprise clients. Spearheaded system reliability enhancements, utilizing expertise across CentOS, RedHat, SUSE, and Ubuntu. Delivered mission-critical solutions that elevated client satisfaction and operational continuity.</p>
 
-            a {
-                word-wrap: break-word; /* Ensures long URLs wrap on smaller screens */
-            }
+            <h3>Splunk Engineer | Sykes (Splunk Client) - (2019 – 2020)</h3>
+            <p>Supported system administrators by providing expert remote technical support for Splunk cloud instances. Led troubleshooting of complex Regex malfunctions, ensuring operational continuity for large-scale data platforms. Partnered with clients to develop actionable insights and improve data analysis capabilities. Enhanced data-driven decision-making by refining system processes and increasing platform reliability.</p>
 
-            @media (min-width: 768px) {
-                ul {
-                    padding-left: 40px;
-                }
-            }
-        </style>
-        <style>
-            /* Global Styling */
-            body {
-                font-family: 'Arial', sans-serif;
-                margin: 0;
-                padding: 0;
-                background-color: #121212;
-                color: #ffffff;
-            }
+            <h3>Payroll Garnishment Practitioner Administrator | IBM (P&G Client) - (2017 – 2018)</h3>
+            <p>Managed complex payroll processing for U.S. and Canadian entities, ensuring compliance with legal requirements. Utilized SAP to handle wage garnishments, balancing accuracy with strict deadlines for high-stakes financial operations. Improved client processes by analyzing workflow efficiency and implementing enhancements. Reduced payroll discrepancies through meticulous record-keeping and systems alignment.</p>
 
-            h1, h2 {
-                color: #D4AF37;
-                text-align: center;
-            }
+            <h3>System Operations Administrator | IBM (Facebook and Chile’s Mining Clients) - (2015 – 2017)</h3>
+            <p>Oversaw daily monitoring of Linux and Windows servers, ensuring consistent system performance and resolving critical incidents. Led server backup revisions, using Tivoli and Service Desk to enhance system security and data integrity. Proactively managed server health and uptime, coordinating across teams to maintain operational excellence. Provided detailed system reporting, streamlining performance management.</p>
 
-            section {
-                margin: 20px;
-                padding: 10px;
-            }
+            <h3>IT Service Desk Delivery | IBM (Various Clients) - (2014 – 2015)</h3>
+            <p>Delivered end-user support to commercial accounts, resolving diverse technical issues swiftly and accurately. Handled service desk requests through multiple channels, ensuring seamless technical operations. Played a crucial role in troubleshooting hardware and software issues. Provided superior customer service, increasing client satisfaction across various industries.</p>
 
-            a {
-                color: #D4AF37;
-                text-decoration: none;
-            }
+            <h3>Technical Support Specialist | Banco Nacional de Costa Rica - (2013)</h3>
+            <p>Delivered comprehensive IT support, troubleshooting hardware and software issues for multiple departments. Ensured the smooth daily operations of critical systems, responding rapidly to incidents. Managed on-site technical problems, implementing solutions that minimized downtime and maximized efficiency for banking staff. Provided preventative maintenance, reducing recurring issues.</p>
+        </section>
 
-            a:hover {
-                text-decoration: underline;
-            }
-
-            /* Contact Section */
-            .contact ul {
-                padding-left: 20px;
-            }
-
-            .contact ul li {
-                margin-bottom: 10px;
-            }
-
-            /* Mobile Styling */
-            @media (min-width: 768px) {
-                section {
-                    margin: 40px;
-                }
-
-                body {
-                    font-size: 18px;
-                }
-            }
-
-            /* Larger Screen Styling */
-            @media (min-width: 1024px) {
-                body {
-                    font-size: 20px;
-                }
-
-                section {
-                    max-width: 800px;
-                    margin: 50px auto;
-                }
-            }
-        </style>
-    </main>
+        <section class="education">
+            <h2>Education</h2>
+            <ul>
+                <li>2019-2019: Greencore - Linux Engineer Academy</li>
+                <li>2019-2019: Sykes - English Academy C1 level</li>
+                <li>2011-2013: Colegio Técnico Profesional de Granadilla - Technical Software Development</li>
+                <li>2011-2013: Colegio Técnico Profesional de Granadilla - Degree in Secondary Education</li>
+            </ul>
+        </section>
+    </div>
 </body>
+
 </html>
