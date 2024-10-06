@@ -3,13 +3,13 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Alberto Villalobos Barboza - CV</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #000;
-            color: #fff;
+            background-color: #000; /* Black background */
+            color: #fff; /* White text */
             margin: 0;
             padding: 0;
             line-height: 1.6;
@@ -19,10 +19,11 @@
             width: 90%;
             margin: auto;
             padding: 20px;
+            max-width: 1200px; /* Ensure it looks good on larger screens */
         }
 
         h1, h2 {
-            color: #D4AF37;
+            color: #D4AF37; /* Dark gold for titles */
             font-weight: bold;
             text-transform: uppercase;
             border-bottom: 2px solid #D4AF37;
@@ -31,22 +32,24 @@
 
         .profile, .contact {
             display: flex;
-            flex-direction: column;
-            gap: 10px;
+            flex-direction: column; /* Stacks items for better mobile compatibility */
+            margin-bottom: 30px;
         }
 
         .profile h1 {
             font-size: 2.2em;
             margin: 0;
+            text-align: center; /* Center the name on mobile */
         }
 
-        .profile p {
+        .profile p, .contact p {
             font-size: 1.2em;
+            text-align: center; /* Center profile details on mobile */
+            margin: 5px 0;
         }
 
-        .contact p {
-            margin: 5px 0;
-            font-size: 1em;
+        .profile-info {
+            text-align: center;
         }
 
         .contact-info a {
@@ -54,32 +57,18 @@
             text-decoration: none;
         }
 
-        .contact-info a:hover {
-            text-decoration: underline;
-        }
-
-        /* Responsive design */
         @media (min-width: 768px) {
             .profile, .contact {
                 flex-direction: row;
                 justify-content: space-between;
             }
 
-            .profile-info {
-                flex-basis: 70%;
+            .profile-info, .contact-info {
+                flex-basis: 45%;
             }
 
-            .contact-info {
-                flex-basis: 30%;
-                text-align: right;
-            }
-
-            .profile h1 {
-                font-size: 2.5em;
-            }
-
-            .contact p {
-                font-size: 1.1em;
+            .profile-info h1, .contact-info p {
+                text-align: left;
             }
         }
     </style>
@@ -103,7 +92,10 @@
         <section class="profile-summary">
             <h2>Profile</h2>
             <p>
-                As a highly skilled GNU Linux/Unix System and AI Engineer, I have a strong track record of optimizing system management and delivering exceptional customer support. My focus on collaborative teamwork allows me to identify necessary tasks, resources, and deadlines to achieve successful project completion. I am driven to provide comprehensive solutions that meet customers' unique requirements and align with project objectives.
+                As a highly skilled GNU Linux/Unix System and AI Engineer, I have a strong track record of optimizing system management
+                and delivering exceptional customer support. My focus on collaborative teamwork allows me to identify necessary tasks, resources,
+                and deadlines to achieve successful project completion. I am driven to provide comprehensive solutions that meet customers' 
+                unique requirements and align with project objectives.
             </p>
         </section>
         <section class="skills">
@@ -154,75 +146,97 @@
             </ul>
         </section>
 
-        <section class="professional-experience">
-            <h2>Professional Experience</h2>
-            <h3>AI Engineer | Lanshore (UiPath Client) - (2022 – 2024)</h3>
-            <p>
-                Optimized AI system performance by providing technical expertise in troubleshooting and cross-functional collaboration.
-                Led the streamlining of AI processes while ensuring seamless integration of new technologies. Played a pivotal role in
-                updating AI documentation, improving user support and enhancing overall efficiency. Supported the deployment of RPA
-                solutions, driving automation in high-impact areas.
-            </p>
+        <style>
+            /* Mobile-first styling */
+            ul {
+                padding-left: 20px;
+                line-height: 1.8;
+            }
 
-            <h3>Linux Engineer | Tek Experts (Microsoft Cloud Clients) - (2020 – 2022)</h3>
-            <p>
-                Specialized in Azure Cloud and multi-distro Linux troubleshooting, resolving high-priority issues in system performance.
-                Focused on PaaS incident management, ensuring uptime and system stability for large-scale enterprise clients. Spearheaded
-                system reliability enhancements, utilizing expertise across CentOS, RedHat, SUSE, and Ubuntu. Delivered mission-critical
-                solutions that elevated client satisfaction and operational continuity.
-            </p>
+            ul li {
+                margin-bottom: 10px;
+            }
 
-            <h3>Splunk Engineer | Sykes (Splunk Client) - (2019 – 2020)</h3>
-            <p>
-                Supported system administrators by providing expert remote technical support for Splunk cloud instances. Led troubleshooting
-                of complex Regex malfunctions, ensuring operational continuity for large-scale data platforms. Partnered with clients to
-                develop actionable insights and improve data analysis capabilities. Enhanced data-driven decision-making by refining system
-                processes and increasing platform reliability.
-            </p>
+            a {
+                word-wrap: break-word; /* Ensures long URLs wrap on smaller screens */
+            }
 
-            <h3>Payroll Garnishment Practitioner Administrator | IBM (P&G Client) - (2017 – 2018)</h3>
-            <p>
-                Managed complex payroll processing for U.S. and Canadian entities, ensuring compliance with legal requirements.
-                Utilized SAP to handle wage garnishments, balancing accuracy with strict deadlines for high-stakes financial operations.
-                Improved client processes by analyzing workflow efficiency and implementing enhancements. Reduced payroll discrepancies
-                through meticulous record-keeping and systems alignment.
-            </p>
-        </section>
-
-        <section class="education">
-            <h2>Education</h2>
-            <h3>Institute for Applied Linguistics - (2012 – 2017)</h3>
-            <p>Bachelor’s Degree in Spanish Language and Linguistics</p>
-        </section>
-
-        <section class="projects">
-            <h2>Notable Projects</h2>
-            <h3>Azure Automation using Ansible Playbooks</h3>
-            <p>
-                Automated the deployment of multiple virtual machines (VMs) in the Azure cloud using Ansible playbooks. 
-                Reduced the deployment time from hours to minutes, while ensuring consistent VM configuration across different environments.
-            </p>
-
-            <h3>Kubernetes Cluster Management</h3>
-            <p>
-                Designed and implemented a Kubernetes-based infrastructure, allowing scalable and fault-tolerant applications. 
-                Configured networking, monitoring, and storage within the cluster, leading to more reliable service delivery.
-            </p>
-
-            <h3>Multi-Language AI Solution Integration</h3>
-            <p>
-                Integrated AI solutions using Python and Azure Machine Learning to automate data analysis workflows. 
-                Optimized performance through custom algorithms that boosted processing speed by 30%.
-            </p>
-        </section>
-
+            @media (min-width: 768px) {
+                ul {
+                    padding-left: 40px;
+                }
+            }
+        </style>
         <section class="contact">
             <h2>Contact</h2>
-            <p>Email: crono1995@domain.com</p>
-            <p>Phone: +123-456-7890</p>
-            <p>LinkedIn: <a href="https://linkedin.com/in/Crono1995" style="color: #D4AF37;">linkedin.com/in/Crono1995</a></p>
+            <ul>
+                <li>Email: <a href="mailto:useremail@example.com" style="color: #D4AF37;">useremail@example.com</a></li>
+                <li>LinkedIn: <a href="https://linkedin.com/in/username" style="color: #D4AF37;">linkedin.com/in/username</a></li>
+                <li>Location: Global (Remote work friendly)</li>
+            </ul>
         </section>
 
-    </div>
+        <style>
+            /* Global Styling */
+            body {
+                font-family: 'Arial', sans-serif;
+                margin: 0;
+                padding: 0;
+                background-color: #121212;
+                color: #ffffff;
+            }
+
+            h1, h2 {
+                color: #D4AF37;
+                text-align: center;
+            }
+
+            section {
+                margin: 20px;
+                padding: 10px;
+            }
+
+            a {
+                color: #D4AF37;
+                text-decoration: none;
+            }
+
+            a:hover {
+                text-decoration: underline;
+            }
+
+            /* Contact Section */
+            .contact ul {
+                padding-left: 20px;
+            }
+
+            .contact ul li {
+                margin-bottom: 10px;
+            }
+
+            /* Mobile Styling */
+            @media (min-width: 768px) {
+                section {
+                    margin: 40px;
+                }
+
+                body {
+                    font-size: 18px;
+                }
+            }
+
+            /* Larger Screen Styling */
+            @media (min-width: 1024px) {
+                body {
+                    font-size: 20px;
+                }
+
+                section {
+                    max-width: 800px;
+                    margin: 50px auto;
+                }
+            }
+        </style>
+    </main>
 </body>
 </html>
