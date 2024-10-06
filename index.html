@@ -3,26 +3,26 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Alberto Villalobos Barboza - CV</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #000; /* Black background */
-            color: #fff; /* White text */
+            background-color: #000;
+            color: #fff;
             margin: 0;
             padding: 0;
             line-height: 1.6;
         }
 
         .container {
-            width: 80%;
+            width: 90%;
             margin: auto;
             padding: 20px;
         }
 
         h1, h2 {
-            color: #D4AF37; /* Dark gold for titles */
+            color: #D4AF37;
             font-weight: bold;
             text-transform: uppercase;
             border-bottom: 2px solid #D4AF37;
@@ -31,16 +31,12 @@
 
         .profile, .contact {
             display: flex;
-            justify-content: space-between;
-            margin-bottom: 30px;
-        }
-
-        .contact p {
-            margin: 5px 0;
+            flex-direction: column;
+            gap: 10px;
         }
 
         .profile h1 {
-            font-size: 2.5em;
+            font-size: 2.2em;
             margin: 0;
         }
 
@@ -48,23 +44,48 @@
             font-size: 1.2em;
         }
 
-        .profile-info {
-            flex-basis: 70%;
+        .contact p {
+            margin: 5px 0;
+            font-size: 1em;
         }
 
-        .contact-info {
-            flex-basis: 30%;
-            text-align: right;
+        .contact-info a {
+            color: #D4AF37;
+            text-decoration: none;
         }
 
-        .contact-info p {
-            font-size: 1.1em;
+        .contact-info a:hover {
+            text-decoration: underline;
+        }
+
+        /* Responsive design */
+        @media (min-width: 768px) {
+            .profile, .contact {
+                flex-direction: row;
+                justify-content: space-between;
+            }
+
+            .profile-info {
+                flex-basis: 70%;
+            }
+
+            .contact-info {
+                flex-basis: 30%;
+                text-align: right;
+            }
+
+            .profile h1 {
+                font-size: 2.5em;
+            }
+
+            .contact p {
+                font-size: 1.1em;
+            }
         }
     </style>
 </head>
 
 <body>
-
     <div class="container">
         <header class="profile">
             <div class="profile-info">
@@ -75,17 +96,14 @@
             </div>
             <div class="contact-info">
                 <p>Phone: +506 83319414</p>
-                <p>Email: <a href="mailto:amehtvillalobos@gmail.com" style="color: #D4AF37;">amehtvillalobos@gmail.com</a></p>
+                <p>Email: <a href="mailto:amehtvillalobos@gmail.com">amehtvillalobos@gmail.com</a></p>
             </div>
         </header>
 
         <section class="profile-summary">
             <h2>Profile</h2>
             <p>
-                As a highly skilled GNU Linux/Unix System and AI Engineer, I have a strong track record of optimizing system management
-                and delivering exceptional customer support. My focus on collaborative teamwork allows me to identify necessary tasks, resources,
-                and deadlines to achieve successful project completion. I am driven to provide comprehensive solutions that meet customers' 
-                unique requirements and align with project objectives.
+                As a highly skilled GNU Linux/Unix System and AI Engineer, I have a strong track record of optimizing system management and delivering exceptional customer support. My focus on collaborative teamwork allows me to identify necessary tasks, resources, and deadlines to achieve successful project completion. I am driven to provide comprehensive solutions that meet customers' unique requirements and align with project objectives.
             </p>
         </section>
         <section class="skills">
@@ -121,6 +139,7 @@
                 <li>ITIL Foundation in IT Service Management - 09/29/2019</li>
             </ul>
         </section>
+
         <section class="github">
             <h2>GitHub</h2>
             <ul>
@@ -138,37 +157,72 @@
         <section class="professional-experience">
             <h2>Professional Experience</h2>
             <h3>AI Engineer | Lanshore (UiPath Client) - (2022 – 2024)</h3>
-            <p>Optimized AI system performance by providing technical expertise in troubleshooting and cross-functional collaboration. Led the streamlining of AI processes while ensuring seamless integration of new technologies. Played a pivotal role in updating AI documentation, improving user support and enhancing overall efficiency. Supported the deployment of RPA solutions, driving automation in high-impact areas.</p>
+            <p>
+                Optimized AI system performance by providing technical expertise in troubleshooting and cross-functional collaboration.
+                Led the streamlining of AI processes while ensuring seamless integration of new technologies. Played a pivotal role in
+                updating AI documentation, improving user support and enhancing overall efficiency. Supported the deployment of RPA
+                solutions, driving automation in high-impact areas.
+            </p>
 
             <h3>Linux Engineer | Tek Experts (Microsoft Cloud Clients) - (2020 – 2022)</h3>
-            <p>Specialized in Azure Cloud and multi-distro Linux troubleshooting, resolving high-priority issues in system performance. Focused on PaaS incident management, ensuring uptime and system stability for large-scale enterprise clients. Spearheaded system reliability enhancements, utilizing expertise across CentOS, RedHat, SUSE, and Ubuntu. Delivered mission-critical solutions that elevated client satisfaction and operational continuity.</p>
+            <p>
+                Specialized in Azure Cloud and multi-distro Linux troubleshooting, resolving high-priority issues in system performance.
+                Focused on PaaS incident management, ensuring uptime and system stability for large-scale enterprise clients. Spearheaded
+                system reliability enhancements, utilizing expertise across CentOS, RedHat, SUSE, and Ubuntu. Delivered mission-critical
+                solutions that elevated client satisfaction and operational continuity.
+            </p>
 
             <h3>Splunk Engineer | Sykes (Splunk Client) - (2019 – 2020)</h3>
-            <p>Supported system administrators by providing expert remote technical support for Splunk cloud instances. Led troubleshooting of complex Regex malfunctions, ensuring operational continuity for large-scale data platforms. Partnered with clients to develop actionable insights and improve data analysis capabilities. Enhanced data-driven decision-making by refining system processes and increasing platform reliability.</p>
+            <p>
+                Supported system administrators by providing expert remote technical support for Splunk cloud instances. Led troubleshooting
+                of complex Regex malfunctions, ensuring operational continuity for large-scale data platforms. Partnered with clients to
+                develop actionable insights and improve data analysis capabilities. Enhanced data-driven decision-making by refining system
+                processes and increasing platform reliability.
+            </p>
 
             <h3>Payroll Garnishment Practitioner Administrator | IBM (P&G Client) - (2017 – 2018)</h3>
-            <p>Managed complex payroll processing for U.S. and Canadian entities, ensuring compliance with legal requirements. Utilized SAP to handle wage garnishments, balancing accuracy with strict deadlines for high-stakes financial operations. Improved client processes by analyzing workflow efficiency and implementing enhancements. Reduced payroll discrepancies through meticulous record-keeping and systems alignment.</p>
-
-            <h3>System Operations Administrator | IBM (Facebook and Chile’s Mining Clients) - (2015 – 2017)</h3>
-            <p>Oversaw daily monitoring of Linux and Windows servers, ensuring consistent system performance and resolving critical incidents. Led server backup revisions, using Tivoli and Service Desk to enhance system security and data integrity. Proactively managed server health and uptime, coordinating across teams to maintain operational excellence. Provided detailed system reporting, streamlining performance management.</p>
-
-            <h3>IT Service Desk Delivery | IBM (Various Clients) - (2014 – 2015)</h3>
-            <p>Delivered end-user support to commercial accounts, resolving diverse technical issues swiftly and accurately. Handled service desk requests through multiple channels, ensuring seamless technical operations. Played a crucial role in troubleshooting hardware and software issues. Provided superior customer service, increasing client satisfaction across various industries.</p>
-
-            <h3>Technical Support Specialist | Banco Nacional de Costa Rica - (2013)</h3>
-            <p>Delivered comprehensive IT support, troubleshooting hardware and software issues for multiple departments. Ensured the smooth daily operations of critical systems, responding rapidly to incidents. Managed on-site technical problems, implementing solutions that minimized downtime and maximized efficiency for banking staff. Provided preventative maintenance, reducing recurring issues.</p>
+            <p>
+                Managed complex payroll processing for U.S. and Canadian entities, ensuring compliance with legal requirements.
+                Utilized SAP to handle wage garnishments, balancing accuracy with strict deadlines for high-stakes financial operations.
+                Improved client processes by analyzing workflow efficiency and implementing enhancements. Reduced payroll discrepancies
+                through meticulous record-keeping and systems alignment.
+            </p>
         </section>
 
         <section class="education">
             <h2>Education</h2>
-            <ul>
-                <li>2019-2019: Greencore - Linux Engineer Academy</li>
-                <li>2019-2019: Sykes - English Academy C1 level</li>
-                <li>2011-2013: Colegio Técnico Profesional de Granadilla - Technical Software Development</li>
-                <li>2011-2013: Colegio Técnico Profesional de Granadilla - Degree in Secondary Education</li>
-            </ul>
+            <h3>Institute for Applied Linguistics - (2012 – 2017)</h3>
+            <p>Bachelor’s Degree in Spanish Language and Linguistics</p>
         </section>
+
+        <section class="projects">
+            <h2>Notable Projects</h2>
+            <h3>Azure Automation using Ansible Playbooks</h3>
+            <p>
+                Automated the deployment of multiple virtual machines (VMs) in the Azure cloud using Ansible playbooks. 
+                Reduced the deployment time from hours to minutes, while ensuring consistent VM configuration across different environments.
+            </p>
+
+            <h3>Kubernetes Cluster Management</h3>
+            <p>
+                Designed and implemented a Kubernetes-based infrastructure, allowing scalable and fault-tolerant applications. 
+                Configured networking, monitoring, and storage within the cluster, leading to more reliable service delivery.
+            </p>
+
+            <h3>Multi-Language AI Solution Integration</h3>
+            <p>
+                Integrated AI solutions using Python and Azure Machine Learning to automate data analysis workflows. 
+                Optimized performance through custom algorithms that boosted processing speed by 30%.
+            </p>
+        </section>
+
+        <section class="contact">
+            <h2>Contact</h2>
+            <p>Email: crono1995@domain.com</p>
+            <p>Phone: +123-456-7890</p>
+            <p>LinkedIn: <a href="https://linkedin.com/in/Crono1995" style="color: #D4AF37;">linkedin.com/in/Crono1995</a></p>
+        </section>
+
     </div>
 </body>
-
 </html>
