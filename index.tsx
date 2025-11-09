@@ -38,15 +38,66 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useCallback, useMemo, forwardRef } = React;
+        const { useState, useEffect, useCallback, useMemo, forwardRef, Component } = React;
         const { createRoot } = ReactDOM;
+
+        // --- Error Boundary to catch render-time crashes (potential cause of black screen) ---
+        class ErrorBoundary extends Component {
+            constructor(props) {
+                super(props);
+                this.state = { hasError: false, error: null };
+            }
+
+            static getDerivedStateFromError(error) {
+                // Update state so the next render shows the fallback UI.
+                return { hasError: true, error };
+            }
+
+            componentDidCatch(error, errorInfo) {
+                // Log the error for developer inspection
+                console.error("Uncaught error in React component:", error, errorInfo);
+            }
+
+            render() {
+                if (this.state.hasError) {
+                    // You can render any custom fallback UI
+                    return (
+                        <div className="flex flex-col items-center justify-center min-h-screen p-8 text-center bg-red-900 text-white">
+                            <h1 className="text-4xl font-bold mb-4">Application Error</h1>
+                            <p className="text-xl mb-4">Something went wrong during rendering. This might be due to a script loading issue (like the icons).</p>
+                            <pre className="mt-4 p-4 bg-red-800 rounded-lg text-left overflow-x-auto max-w-full">
+                                {this.state.error && this.state.error.toString()}
+                            </pre>
+                            <p className="mt-4 text-sm">Please check the console for full error details.</p>
+                        </div>
+                    );
+                }
+
+                return this.props.children; 
+            }
+        }
+        // --- End Error Boundary ---
+
 
         // Helper function for Lucide icons, now correctly referencing the global 'lucide' object
         const Icon = ({ name, className = '' }) => {
-            // Check if lucide object and its icons property exist before accessing
+            // Ensure the global lucide object is available and contains icons
             const iconData = window.lucide && window.lucide.icons && window.lucide.icons[name];
-            if (!iconData) return null;
+            
+            // If the icon data is not found, return a generic placeholder SVG to prevent render crashes.
+            if (!iconData) {
+                console.warn(`Icon '${name}' not found in lucide library.`);
+                return (
+                    <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="12" y1="8" x2="12" y2="12" />
+                        <line x1="12" y1="16" x2="12" y2="16" />
+                    </svg>
+                );
+            }
+
             const [path, attrs] = iconData;
+            // The attrs spread includes viewBox, width, height, etc.
             return (
                 <svg {...attrs} className={className} dangerouslySetInnerHTML={{ __html: path.join('') }} />
             );
@@ -516,12 +567,13 @@
             );
         };
 
-        // Render the App
+        // Render the App wrapped in the Error Boundary
         document.addEventListener('DOMContentLoaded', () => {
             const container = document.getElementById('root');
             if (container) {
                 const root = createRoot(container);
-                root.render(<App />);
+                // Wrap the main App component with the ErrorBoundary
+                root.render(<ErrorBoundary><App /></ErrorBoundary>);
             } else {
                 console.error("Root element not found.");
             }
