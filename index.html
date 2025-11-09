@@ -62,8 +62,8 @@
                 // 1. Create or load the Tesseract Worker
                 if (!state.tesseractWorker) {
                     state.tesseractWorker = await Tesseract.createWorker({ 
-                        // Logger is useful for debugging in the console
                         logger: m => {
+                            // Log progress to the console
                             if (m.status === 'recognizing') {
                                 console.log(`OCR Progress: ${(m.progress * 100).toFixed(0)}%`); 
                             }
@@ -161,7 +161,6 @@
                 app.appendChild(MainScreen());
             }
             
-            // FIX: Ensure Lucide icons are rendered after every DOM update
             lucide.createIcons();
         };
 
@@ -276,12 +275,6 @@
                 dropArea.addEventListener('drop', handleDrop, false);
             }
 
-            const extractButton = div.querySelector('#extractButton');
-            // FIX: This listener ensures the button works every time MainScreen is rendered
-            if (extractButton) {
-                extractButton.onclick = handleExtract;
-            }
-
             const clearFileButton = div.querySelector('#clearFile');
             if (clearFileButton) clearFileButton.onclick = handleReset;
 
@@ -317,6 +310,16 @@
 
         // --- Initialization ---
         document.addEventListener('DOMContentLoaded', renderApp);
+        
+        // CRITICAL FIX: Event Delegation for the Extract Button
+        // Attaches a permanent listener to the document to catch clicks on the dynamically rendered button.
+        document.addEventListener('click', (event) => {
+            // Check if the clicked element or its parent is the extract button
+            if (event.target.id === 'extractButton' || event.target.closest('#extractButton')) {
+                event.preventDefault(); 
+                handleExtract();
+            }
+        });
     </script>
 </body>
 </html>
