@@ -3,608 +3,332 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI-Powered OCR Extractor</title>
-    <!-- Load Tailwind CSS from CDN -->
+    <title>Gemini Vision OCR - GitHub Pages</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Load React, ReactDOM, and Babel for JSX in-browser compilation -->
-    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <!-- Removed Lucide Icon CDN to increase stability -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/@google/genai@latest/dist/client.js"></script>
+    <style>
+        /* Custom styles based on the original component */
+        .bg-gradient-hero {
+            background: linear-gradient(180deg, #f9fafb 0%, #ffffff 100%);
+        }
+        .bg-gradient-primary {
+            background: linear-gradient(90deg, #4f46e5, #7c3aed);
+        }
+        .bg-gradient-clip {
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .bg-card { background-color: white; }
+        .border-border { border-color: #e5e7eb; }
+        .text-primary { color: #4f46e5; }
+        .hover\:border-primary\/50:hover { border-color: rgba(79, 70, 229, 0.5); }
+        .variant-gradient {
+            background: linear-gradient(90deg, #4f46e5, #7c3aed);
+            color: white;
+        }
+    </style>
 </head>
-<body>
-    <div id="root"></div>
+<body class="bg-gradient-hero min-h-screen">
+    <div id="app" class="container mx-auto px-6 py-12">
+        </div>
 
-    <script type="text/babel">
-        const { useState, useEffect, useCallback, useMemo, forwardRef, Component } = React;
-        const { createRoot } = ReactDOM;
-
-        // --- Error Boundary to catch render-time crashes ---
-        class ErrorBoundary extends Component {
-            constructor(props) {
-                super(props);
-                this.state = { hasError: false, error: null };
-            }
-
-            static getDerivedStateFromError(error) {
-                return { hasError: true, error };
-            }
-
-            componentDidCatch(error, errorInfo) {
-                console.error("Uncaught error in React component:", error, errorInfo);
-            }
-
-            render() {
-                if (this.state.hasError) {
-                    return (
-                        <div className="flex flex-col items-center justify-center min-h-screen p-8 text-center bg-red-900 text-white font-sans">
-                            <h1 className="text-4xl font-bold mb-4">Application Error</h1>
-                            <p className="text-xl mb-4">Something went wrong during rendering. Check the console for details.</p>
-                            <pre className="mt-4 p-4 bg-red-800 rounded-lg text-left overflow-x-auto max-w-full">
-                                {this.state.error && this.state.error.toString()}
-                            </pre>
-                        </div>
-                    );
-                }
-                return this.props.children; 
-            }
-        }
-        // --- End Error Boundary ---
-
-        // --- Icon Components (Replacing Lucide CDN Lookup for Stability) ---
-        // Defining icons directly as SVG components to avoid global script timing issues.
-
-        const IconScan = ({ className = 'w-6 h-6' }) => (
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-                <path d="M3 7V5c0-1.1.9-2 2-2h2" />
-                <path d="M17 3h2c1.1 0 2 .9 2 2v2" />
-                <path d="M21 17v2c0 1.1-.9 2-2 2h-2" />
-                <path d="M7 21H5c-1.1 0-2-.9-2-2v-2" />
-                <path d="M8 14l2.5 2.5L13 10" />
-            </svg>
-        );
-
-        const IconUpload = ({ className = 'w-6 h-6' }) => (
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                <polyline points="17 8 12 3 7 8" />
-                <line x1="12" y1="3" x2="12" y2="15" />
-            </svg>
-        );
-
-        const IconX = ({ className = 'w-4 h-4' }) => (
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-                <path d="M18 6L6 18" />
-                <path d="M6 6l12 12" />
-            </svg>
-        );
-
-        const IconLoader2 = ({ className = 'w-5 h-5' }) => (
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-                <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-            </svg>
-        );
-
-        const IconArrowLeft = ({ className = 'w-4 h-4' }) => (
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-                <path d="M19 12H5" />
-                <path d="M12 19l-7-7 7-7" />
-            </svg>
-        );
-        
-        const IconCopy = ({ className = 'w-4 h-4' }) => (
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-                <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-            </svg>
-        );
-
-        const IconDownload = ({ className = 'w-4 h-4' }) => (
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                <polyline points="7 10 12 15 17 10" />
-                <line x1="12" y1="15" x2="12" y2="3" />
-            </svg>
-        );
-        
-        // Dynamic icon resolver function to use the new components
-        const getIcon = (name, className) => {
-            switch(name) {
-                case 'Scan': return <IconScan className={className} />;
-                case 'Upload': return <IconUpload className={className} />;
-                case 'X': return <IconX className={className} />;
-                case 'Loader2': return <IconLoader2 className={className} />;
-                case 'ArrowLeft': return <IconArrowLeft className={className} />;
-                case 'Copy': return <IconCopy className={className} />;
-                case 'Download': return <IconDownload className={className} />;
-                default: return null;
-            }
-        }
+    <script>
+        // --- Configuration ---
+        // !!! IMPORTANT: NEVER STORE YOUR GEMINI API KEY DIRECTLY IN A PUBLIC REPOSITORY !!!
+        // This is for demonstration on GitHub Pages only.
+        // For production, use a secure backend proxy to protect your key.
+        const GEMINI_API_KEY = "YOUR_GEMINI_API_KEY_HERE";
+        const MODEL_NAME = "gemini-2.5-flash";
 
         // --- Utility Functions ---
 
-        /** Converts file size in bytes to a human-readable string. */
-        const formatFileSize = (bytes) => {
-            if (bytes === 0) return '0 Bytes';
-            const k = 1024;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-        };
-
-        /** Converts a File object to a Base64 encoded string. */
-        const fileToBase64 = (file) => {
+        /** Converts a File object to a base64 Data URL expected by the Gemini API. */
+        const fileToGenerativePart = async (file) => {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
-                reader.onloadend = () => {
-                    const base64String = reader.result.split(',')[1];
-                    if (base64String) {
-                        resolve(base64String);
-                    } else {
-                        reject(new Error("Failed to read file as base64."));
-                    }
+                reader.onload = () => {
+                    const base64Data = reader.result.split(',')[1];
+                    resolve({
+                        inlineData: {
+                            data: base64Data,
+                            mimeType: file.type,
+                        },
+                    });
                 };
-                reader.onerror = (error) => reject(error);
+                reader.onerror = reject;
                 reader.readAsDataURL(file);
             });
         };
 
-        /** A simple global state for displaying toast messages. */
-        const useToast = () => {
-            const [toastMessage, setToastMessage] = useState(null);
-            const [toastVariant, setToastVariant] = useState('success'); // success, error
-
-            const showToast = useCallback((message, variant = 'success') => {
-                setToastMessage(message);
-                setToastVariant(variant);
-                setTimeout(() => setToastMessage(null), 5000);
-            }, []);
-
-            return { toastMessage, toastVariant, showToast };
+        // --- State Management (Simple object-based state) ---
+        let state = {
+            selectedFile: null,
+            isProcessing: false,
+            ocrResult: null,
+            fileName: '',
+            error: null,
+            geminiClient: null,
         };
 
-        // --- UI Components ---
+        // --- Component Rendering Functions (Simplified for vanilla JS) ---
 
-        const Button = forwardRef(({ className = '', variant = 'default', size = 'default', children, ...props }, ref) => {
-            const baseClasses = 'inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 disabled:pointer-events-none disabled:opacity-50 shadow-md hover:shadow-lg transition-shadow';
+        const renderApp = () => {
+            const app = document.getElementById('app');
+            app.innerHTML = ''; // Clear previous content
 
-            const variantClasses = useMemo(() => {
-                switch (variant) {
-                    case 'gradient':
-                        return 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white hover:opacity-90';
-                    case 'secondary':
-                        return 'bg-gray-700 text-white hover:bg-gray-600';
-                    case 'outline':
-                        return 'border border-gray-600 bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-white';
-                    case 'danger':
-                        return 'bg-red-600 text-white hover:bg-red-700';
-                    case 'default':
-                    default:
-                        return 'bg-cyan-500 text-white hover:bg-cyan-600';
-                }
-            }, [variant]);
+            if (state.ocrResult) {
+                app.appendChild(OcrResult(state.ocrResult, state.fileName));
+            } else {
+                app.appendChild(MainScreen());
+            }
+            
+            // Re-render Lucide icons after DOM update
+            lucide.createIcons();
+        };
 
-            const sizeClasses = useMemo(() => {
-                switch (size) {
-                    case 'sm':
-                        return 'h-9 px-3';
-                    case 'lg':
-                        return 'h-12 px-8 text-base';
-                    case 'default':
-                    default:
-                        return 'h-10 px-4 py-2';
-                }
-            }, [size]);
-
-            return (
-                <button
-                    ref={ref}
-                    className={`${baseClasses} ${variantClasses} ${sizeClasses} ${className}`}
-                    {...props}
-                >
-                    {children}
-                </button>
-            );
-        });
-
-        const Progress = ({ value = 0, className = '' }) => (
-            <div className={`w-full h-2 bg-gray-700 rounded-full overflow-hidden ${className}`}>
-                <div
-                    className="h-full bg-cyan-400 transition-all duration-300 ease-out"
-                    style={{ width: `${value}%` }}
-                    role="progressbar"
-                    aria-valuenow={value}
-                    aria-valuemin="0"
-                    aria-valuemax="100"
-                />
-            </div>
-        );
-
-        const ToastContainer = ({ message, variant }) => {
-            if (!message) return null;
-
-            const colorClass = variant === 'success' ? 'bg-green-600' : 'bg-red-600';
-
-            return (
-                <div className={`fixed bottom-4 right-4 z-50 p-3 rounded-lg shadow-xl text-white transition-all duration-300 transform translate-y-0 opacity-100 ${colorClass}`}>
-                    {message}
+        const OcrResult = (text, fileName) => {
+            const div = document.createElement('div');
+            div.className = "py-12";
+            div.innerHTML = `
+                <div class="max-w-4xl mx-auto bg-card border border-border rounded-lg shadow-xl p-8">
+                    <div class="flex items-center justify-between mb-6 border-b pb-4">
+                        <h2 class="text-2xl font-bold text-primary flex items-center">
+                            <i data-lucide="check-circle" class="w-6 h-6 mr-2"></i>
+                            OCR Complete
+                        </h2>
+                        <button id="resetButton" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition">
+                            Process Another
+                        </button>
+                    </div>
+                    <p class="text-sm text-gray-500 mb-4">
+                        Text extracted from: <span class="font-semibold">${fileName}</span>
+                    </p>
+                    <div class="bg-gray-50 border border-gray-200 p-6 rounded-lg whitespace-pre-wrap max-h-[500px] overflow-y-auto">
+                        ${text}
+                    </div>
+                    <button id="copyButton" class="mt-4 w-full px-4 py-2 variant-gradient rounded-md hover:opacity-90 transition">
+                        <i data-lucide="copy" class="w-5 h-5 mr-2 inline-block"></i>
+                        Copy Text
+                    </button>
                 </div>
-            );
+            `;
+            
+            div.querySelector('#resetButton').onclick = handleReset;
+            div.querySelector('#copyButton').onclick = () => {
+                navigator.clipboard.writeText(text);
+                alert('Text copied to clipboard!');
+            };
+            return div;
         };
 
-        // --- Custom OCR Components ---
+        const MainScreen = () => {
+            const div = document.createElement('div');
+            div.innerHTML = `
+                <div class="text-center mb-12 space-y-4">
+                    <div class="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-full border border-primary/20">
+                        <i data-lucide="scan" class="w-5 h-5 text-primary"></i>
+                        <span class="text-sm font-medium text-primary">AI-Powered Vision OCR</span>
+                    </div>
+                    <h1 class="text-5xl font-bold tracking-tight">
+                        Extract Text from Any
+                        <span class="block bg-gradient-primary bg-gradient-clip">
+                            Image or Document
+                        </span>
+                    </h1>
+                    <p class="text-xl text-gray-500 max-w-2xl mx-auto">
+                        Upload images and get accurate OCR results powered by Google Gemini vision.
+                    </p>
+                    ${state.error ? `<div class="mt-4 p-3 bg-red-100 text-red-700 rounded-md max-w-lg mx-auto">${state.error}</div>` : ''}
+                </div>
 
-        const FileUploader = ({ onFileSelect, isUploading, uploadProgress }) => {
-            const [file, setFile] = useState(null);
-
-            const handleDrop = (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                const files = e.dataTransfer.files;
-                if (files.length > 0) {
-                    selectFile(files[0]);
-                }
-            };
-
-            const handleChange = (e) => {
-                if (e.target.files.length > 0) {
-                    selectFile(e.target.files[0]);
-                }
-            };
-
-            const selectFile = (selectedFile) => {
-                if (selectedFile.size > 20971520) { // 20MB limit
-                    console.error('File size exceeds the 20MB limit.');
-                    return;
-                }
-                setFile(selectedFile);
-                onFileSelect(selectedFile);
-            };
-
-            const handleRemove = (e) => {
-                e.stopPropagation();
-                setFile(null);
-                onFileSelect(null);
-            };
-
-            if (isUploading) {
-                return (
-                    <div className="max-w-3xl mx-auto p-8 border-2 border-cyan-500/50 rounded-xl bg-gray-800/50 shadow-2xl space-y-4">
-                        <div className="flex items-center justify-between text-gray-300">
-                            <p className="font-medium truncate">{file.name}</p>
-                            <p className="text-sm">{formatFileSize(file.size)}</p>
+                <div class="grid md:grid-cols-3 gap-6 mb-12 max-w-4xl mx-auto">
+                    ${[
+                        { title: 'Multi-format Support', desc: 'PNG, JPG, WEBP, HEIC' },
+                        { title: 'Gemini Vision', desc: 'Advanced AI for high accuracy' },
+                        { title: 'Frontend Only', desc: 'Works as a static page' },
+                    ].map((feature, i) => `
+                        <div key="${i}" class="bg-card border border-border rounded-lg p-6 hover:border-primary/50 transition-all hover:shadow-lg">
+                            <h3 class="font-semibold mb-2">${feature.title}</h3>
+                            <p class="text-sm text-gray-500">${feature.desc}</p>
                         </div>
-                        <Progress value={uploadProgress} />
-                        <p className="text-center text-sm text-cyan-400">
-                            {uploadProgress < 40 ? 'Converting file to Base64...' : 'Extracting text with AI model...'}
+                    `).join('')}
+                </div>
+
+                ${FileUploader()}
+
+                ${state.selectedFile && !state.isProcessing ? `
+                    <div class="flex justify-center mt-6">
+                        <button id="extractButton" class="px-8 py-3 variant-gradient rounded-full shadow-lg hover:shadow-xl transition-all text-lg font-semibold">
+                            <i data-lucide="scan" class="w-5 h-5 mr-2 inline-block"></i>
+                            Extract Text
+                        </button>
+                    </div>
+                ` : ''}
+
+                <div class="mt-16 text-center">
+                    <div class="inline-flex flex-col gap-2 p-6 bg-card border border-border rounded-lg">
+                        <p class="text-sm text-gray-500">
+                            🚀 Powered by <span class="text-primary font-semibold">Gemini API</span>
+                        </p>
+                        <p class="text-xs text-gray-500">
+                            Using Google Gemini 2.5 Flash for vision & OCR.
                         </p>
                     </div>
-                );
+                </div>
+            `;
+            
+            // Event listeners
+            const fileInput = div.querySelector('#fileInput');
+            if (fileInput) fileInput.onchange = handleFileChange;
+            
+            const dropArea = div.querySelector('#dropArea');
+            if (dropArea) {
+                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                    dropArea.addEventListener(eventName, preventDefaults, false);
+                });
+                dropArea.addEventListener('drop', handleDrop, false);
             }
 
-            return (
-                <div className="max-w-3xl mx-auto">
-                    <label
-                        htmlFor="file-upload"
-                        className="block w-full cursor-pointer"
-                        onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                        onDrop={handleDrop}
-                    >
-                        <div className="flex flex-col items-center justify-center h-56 p-6 border-2 border-dashed border-gray-600 rounded-xl bg-gray-800/50 hover:border-cyan-500 transition-colors shadow-xl">
-                            {file ? (
-                                <div className="flex flex-col items-center space-y-3">
-                                    {getIcon('Upload', "w-8 h-8 text-cyan-400")}
-                                    <p className="text-lg font-medium text-white truncate max-w-full">{file.name}</p>
-                                    <p className="text-sm text-gray-400">{formatFileSize(file.size)}</p>
-                                    <Button onClick={handleRemove} variant="danger" size="sm" className="mt-2">
-                                        {getIcon('X', "w-4 h-4 mr-1")}
-                                        Remove File
-                                    </Button>
-                                </div>
-                            ) : (
-                                <div className="text-center space-y-2">
-                                    {getIcon('Upload', "w-10 h-10 text-gray-500 mx-auto")}
-                                    <p className="text-white font-semibold">Drag & drop files here</p>
-                                    <p className="text-sm text-gray-400">or click to browse</p>
-                                    <p className="text-xs text-gray-500">Supported: PNG, JPG, WEBP, TIFF, PDF (Max 20MB)</p>
-                                </div>
-                            )}
-                        </div>
-                    </label>
-                    <input
-                        id="file-upload"
-                        type="file"
-                        accept="image/png, image/jpeg, image/webp, image/tiff, application/pdf"
-                        className="hidden"
-                        onChange={handleChange}
-                    />
-                </div>
-            );
+            const extractButton = div.querySelector('#extractButton');
+            if (extractButton) extractButton.onclick = handleExtract;
+
+            return div;
         };
-
-        const OcrResult = ({ text, fileName, onReset, showToast }) => {
-            const handleCopy = () => {
-                // document.execCommand('copy') is required in this environment
-                document.execCommand('copy', false, text);
-                showToast('Text copied to clipboard!', 'success');
-            };
-
-            const handleDownload = () => {
-                const blob = new Blob([text], { type: 'text/plain' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `${fileName.split('.')[0] || 'ocr_result'}.txt`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                showToast('Text file downloaded!', 'success');
-            };
-
-            return (
-                <div className="max-w-4xl mx-auto bg-gray-800 rounded-xl shadow-2xl p-6 md:p-10 border border-cyan-500/30">
-                    <div className="flex justify-between items-center border-b border-gray-700 pb-4 mb-6">
-                        <h2 className="text-2xl font-bold text-white flex items-center">
-                            {getIcon('Scan', "w-6 h-6 mr-3 text-cyan-400")}
-                            OCR Results
-                        </h2>
-                        <Button onClick={onReset} variant="outline" size="sm" className="text-gray-300 bg-gray-700 border-gray-600 hover:bg-gray-600">
-                            {getIcon('ArrowLeft', "w-4 h-4 mr-2")}
-                            New Scan
-                        </Button>
+        
+        const FileUploader = () => {
+            let content = '';
+            if (state.selectedFile) {
+                content = `
+                    <div class="text-center">
+                        <i data-lucide="file-check" class="w-12 h-12 mx-auto text-green-500 mb-2"></i>
+                        <p class="font-semibold">${state.selectedFile.name}</p>
+                        <p class="text-sm text-gray-500">Ready to process. Click 'Extract Text' below.</p>
+                        <button id="clearFile" class="mt-2 text-red-500 text-sm hover:underline">Clear File</button>
                     </div>
-
-                    <p className="text-sm text-gray-400 mb-4">
-                        File: <span className="font-mono text-cyan-400">{fileName}</span>
-                    </p>
-
-                    <div className="min-h-[300px] max-h-[500px] overflow-y-auto bg-black p-4 rounded-lg border border-gray-700 font-mono text-sm text-gray-200 resize-y">
-                        <pre className="whitespace-pre-wrap">{text}</pre>
+                `;
+            } else if (state.isProcessing) {
+                 content = `
+                    <div class="text-center">
+                        <i data-lucide="loader" class="w-12 h-12 mx-auto text-primary animate-spin mb-2"></i>
+                        <p class="font-semibold text-primary">Processing...</p>
+                        <p class="text-sm text-gray-500">Extracting text using Gemini Vision API.</p>
                     </div>
-
-                    <div className="flex justify-end gap-3 mt-6">
-                        <Button onClick={handleCopy} variant="secondary">
-                            {getIcon('Copy', "w-4 h-4 mr-2")}
-                            Copy Text
-                        </Button>
-                        <Button onClick={handleDownload} variant="gradient">
-                            {getIcon('Download', "w-4 h-4 mr-2")}
-                            Download .txt
-                        </Button>
-                    </div>
-                </div>
-            );
-        };
-
-        // --- Main Application Component ---
-
-        const App = () => {
-            const { toastMessage, toastVariant, showToast } = useToast();
-            const [selectedFile, setSelectedFile] = useState(null);
-            const [isUploading, setIsUploading] = useState(false);
-            const [uploadProgress, setUploadProgress] = useState(0);
-            const [ocrResult, setOcrResult] = useState(null);
-
-            const isAuthReady = true; // Assumed ready for this static app
-
-            const handleFileSelect = (file) => {
-                setSelectedFile(file);
-            };
-
-            const handleUpload = async () => {
-                if (!selectedFile) return;
-
-                setIsUploading(true);
-                setUploadProgress(10);
-                let base64Data;
-
-                try {
-                    // 1. Convert file to Base64
-                    base64Data = await fileToBase64(selectedFile);
-                    setUploadProgress(30);
-                    showToast('File converted. Sending to AI model...', 'success');
-
-                    // 2. Prepare API payload
-                    const prompt = "Perform Optical Character Recognition (OCR) on the provided image/document. Extract all visible text into a single, clean block of plain text. Do not add any introductory phrases, commentary, or descriptions of the image content; just output the extracted text.";
-                    const apiKey = ""; 
-                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-
-                    const payload = {
-                        contents: [
-                            {
-                                role: "user",
-                                parts: [
-                                    { text: prompt },
-                                    {
-                                        inlineData: {
-                                            mimeType: selectedFile.type,
-                                            data: base64Data
-                                        }
-                                    }
-                                ]
-                            }
-                        ],
-                    };
-
-                    setUploadProgress(60);
-
-                    // 3. Call Gemini API (with Exponential Backoff)
-                    const MAX_RETRIES = 5;
-                    let response;
-                    for (let i = 0; i < MAX_RETRIES; i++) {
-                        response = await fetch(apiUrl, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(payload)
-                        });
-
-                        if (response.ok) break;
-
-                        // Handle API errors (e.g., 429 Too Many Requests)
-                        if (response.status === 429 && i < MAX_RETRIES - 1) {
-                            const delay = Math.pow(2, i) * 1000;
-                            await new Promise(resolve => setTimeout(resolve, delay));
-                        } else {
-                            throw new Error(`AI API Request failed (Status: ${response.status}).`);
-                        }
-                    }
-
-                    if (!response.ok) {
-                        throw new Error("AI API request failed after all retries.");
-                    }
-
-                    const result = await response.json();
-                    const extractedText = result.candidates?.[0]?.content?.parts?.[0]?.text;
-
-                    if (extractedText) {
-                        setOcrResult({
-                            text: extractedText.trim(),
-                            fileName: selectedFile.name,
-                        });
-                        showToast('OCR completed successfully!', 'success');
-                        setUploadProgress(100);
-                    } else {
-                        const errorMessage = result.error?.message || "AI model returned no text or encountered an internal error.";
-                        throw new Error(errorMessage);
-                    }
-
-                } catch (error) {
-                    console.error('OCR Processing Error:', error);
-                    showToast(error.message || 'Failed to process OCR via API.', 'error');
-                } finally {
-                    setIsUploading(false);
-                    setUploadProgress(0);
-                }
-            };
-
-            const handleReset = () => {
-                setSelectedFile(null);
-                setOcrResult(null);
-                setUploadProgress(0);
-            };
-
-            // Main UI Render
-            return (
-                <div className="min-h-screen bg-gray-900 text-white font-sans">
-                    {/* Re-inject custom styles here to isolate them */}
-                    <style>{`
-                        .bg-gradient-primary {
-                            background-image: linear-gradient(to right, #06b6d4, #3b82f6);
-                        }
-                        .bg-clip-text {
-                            -webkit-background-clip: text;
-                            background-clip: text;
-                        }
-                        .animate-spin-fast {
-                            animation: spin 0.5s linear infinite;
-                        }
-                        @keyframes spin {
-                            from { transform: rotate(0deg); }
-                            to { transform: rotate(360deg); }
-                        }
-                    `}</style>
-                    <div className="container mx-auto px-4 py-12">
-                        {ocrResult ? (
-                            <OcrResult
-                                text={ocrResult.text}
-                                fileName={ocrResult.fileName}
-                                onReset={handleReset}
-                                showToast={showToast}
-                            />
-                        ) : (
-                            <>
-                                {/* Header */}
-                                <div className="text-center mb-12 space-y-4">
-                                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-500/10 rounded-full border border-cyan-500/20">
-                                        {getIcon('Scan', "w-5 h-5 text-cyan-500")}
-                                        <span className="text-sm font-medium text-cyan-500">AI-Powered OCR</span>
-                                    </div>
-                                    <h1 className="text-5xl font-extrabold tracking-tight md:text-6xl">
-                                        Extract Text from Any
-                                        <span className="block bg-gradient-primary bg-clip-text text-transparent">
-                                            Image or Document
-                                        </span>
-                                    </h1>
-                                    <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-                                        Upload images or PDFs and get accurate OCR results powered by advanced AI vision models.
-                                        Fast, reliable, and developer-friendly.
-                                    </p>
-                                </div>
-
-                                {/* Features */}
-                                <div className="grid md:grid-cols-3 gap-6 mb-12 max-w-4xl mx-auto">
-                                    {[
-                                        { title: 'Multi-format Support', desc: 'PNG, JPG, WEBP, TIFF, PDF' },
-                                        { title: 'AI-Powered', desc: 'Real-time text extraction via Gemini' },
-                                        { title: 'Fast Processing', desc: 'Results in seconds' },
-                                    ].map((feature, i) => (
-                                        <div
-                                            key={i}
-                                            className="bg-gray-800 border border-gray-700 rounded-lg p-6 hover:border-cyan-500/50 transition-all hover:shadow-lg"
-                                        >
-                                            <h3 className="font-semibold mb-2 text-white">{feature.title}</h3>
-                                            <p className="text-sm text-gray-400">{feature.desc}</p>
-                                        </div>
-                                    ))}
-                                </div>
-
-                                {/* Uploader */}
-                                <FileUploader
-                                    onFileSelect={handleFileSelect}
-                                    isUploading={isUploading}
-                                    uploadProgress={uploadProgress}
-                                />
-
-                                {selectedFile && (
-                                    <div className="flex justify-center mt-6">
-                                        <Button
-                                            onClick={handleUpload}
-                                            size="lg"
-                                            variant="gradient"
-                                            disabled={isUploading || !isAuthReady}
-                                            className="min-w-[200px]"
-                                        >
-                                            {isUploading ? (
-                                                <>
-                                                    {getIcon('Loader2', "w-5 h-5 mr-2 animate-spin")}
-                                                    Processing...
-                                                </>
-                                            ) : (
-                                                <>
-                                                    {getIcon('Scan', "w-5 h-5 mr-2")}
-                                                    Extract Text
-                                                </>
-                                            )}
-                                        </Button>
-                                    </div>
-                                )}
-
-                                {/* Footer */}
-                                <div className="mt-16 text-center">
-                                    <div className="inline-flex flex-col gap-2 p-6 bg-gray-800 border border-gray-700 rounded-lg">
-                                        <p className="text-sm text-gray-400">
-                                            🚀 Powered by <span className="text-cyan-500 font-semibold">Google Gemini 2.5 Flash</span>
-                                        </p>
-                                    </div>
-                                </div>
-                            </>
-                        )}
-                    </div>
-                    <ToastContainer message={toastMessage} variant={toastVariant} />
-                </div>
-            );
-        };
-
-        // Render the App wrapped in the Error Boundary
-        document.addEventListener('DOMContentLoaded', () => {
-            const container = document.getElementById('root');
-            if (container) {
-                const root = createRoot(container);
-                root.render(<ErrorBoundary><App /></ErrorBoundary>);
+                 `;
             } else {
-                console.error("Root element not found.");
+                 content = `
+                    <i data-lucide="file-up" class="w-12 h-12 mx-auto text-gray-400 mb-3"></i>
+                    <p class="mb-2 font-semibold">Drag & drop an image here, or <span class="text-primary hover:text-indigo-600 transition cursor-pointer">browse</span></p>
+                    <p class="text-xs text-gray-500">Max size 20MB. Supported: JPG, PNG, WEBP, HEIC.</p>
+                 `;
             }
+
+            const div = document.createElement('div');
+            div.className = "max-w-2xl mx-auto";
+            div.innerHTML = `
+                <label id="dropArea" class="block w-full cursor-pointer rounded-xl border-2 border-dashed border-gray-300 p-12 text-center transition-all hover:border-primary/50 bg-white shadow-md">
+                    <input id="fileInput" type="file" class="sr-only" accept="image/jpeg,image/png,image/webp,image/heic">
+                    ${content}
+                </label>
+            `;
+
+            if (state.selectedFile) {
+                div.querySelector('#clearFile').onclick = handleReset;
+            }
+
+            return div.innerHTML;
+        };
+
+        // --- Event Handlers ---
+
+        const handleFileChange = (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                if (file.size > 20 * 1024 * 1024) { // 20MB limit
+                    state.error = 'File size exceeds the 20MB limit.';
+                    state.selectedFile = null;
+                } else {
+                    state.selectedFile = file;
+                    state.fileName = file.name;
+                    state.error = null;
+                }
+                renderApp();
+            }
+        };
+
+        const preventDefaults = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+        };
+
+        const handleDrop = (e) => {
+            const dt = e.dataTransfer;
+            const file = dt.files[0];
+            if (file) {
+                // Manually trigger the file change handler logic
+                const mockEvent = { target: { files: [file] } };
+                handleFileChange(mockEvent);
+            }
+        };
+
+        const handleExtract = async () => {
+            if (!state.selectedFile || state.isProcessing) return;
+
+            state.isProcessing = true;
+            state.error = null;
+            renderApp();
+
+            try {
+                if (!state.geminiClient) {
+                    state.geminiClient = new google.genai.GoogleGenAI(GEMINI_API_KEY);
+                }
+
+                // Convert file to a part for the API call
+                const imagePart = await fileToGenerativePart(state.selectedFile);
+
+                // Call the Gemini API for OCR
+                const prompt = "You are an expert OCR system. Extract ALL text content from this image or document. Do not include any commentary, explanations, or analysis. Just output the raw extracted text in a clean, readable format, preserving line breaks and structure as much as possible.";
+                
+                const response = await state.geminiClient.models.generateContent({
+                    model: MODEL_NAME,
+                    contents: [imagePart, prompt],
+                });
+
+                const extractedText = response.text.trim();
+
+                if (!extractedText) {
+                    throw new Error("Gemini returned an empty result. Could not extract text.");
+                }
+
+                state.ocrResult = extractedText;
+                
+            } catch (error) {
+                console.error("Gemini OCR Error:", error);
+                state.error = "Failed to process the image. Check the console for details, or ensure your API key is correct and you have an active network connection.";
+                state.ocrResult = null; // Clear result on error
+            } finally {
+                state.isProcessing = false;
+                renderApp();
+            }
+        };
+
+        const handleReset = () => {
+            state.selectedFile = null;
+            state.ocrResult = null;
+            state.isProcessing = false;
+            state.fileName = '';
+            state.error = null;
+            renderApp();
+        };
+
+        // --- Initialization ---
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (GEMINI_API_KEY === "YOUR_GEMINI_API_KEY_HERE" || !GEMINI_API_KEY) {
+                state.error = "⚠️ Please replace 'YOUR_GEMINI_API_KEY_HERE' in the script with your actual Gemini API Key to enable functionality.";
+            }
+            renderApp();
         });
     </script>
 </body>
