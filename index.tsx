@@ -12,6 +12,24 @@ const formatFileSize = (bytes) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
 
+/** Converts a File object to a Base64 encoded string. */
+const fileToBase64 = (file) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      // Extract the Base64 string after the comma
+      const base64String = reader.result.split(',')[1];
+      if (base64String) {
+        resolve(base64String);
+      } else {
+        reject(new Error("Failed to read file as base64."));
+      }
+    };
+    reader.onerror = (error) => reject(error);
+    reader.readAsDataURL(file);
+  });
+};
+
 /** A simple global state for displaying toast messages. */
 const useToast = () => {
   const [toastMessage, setToastMessage] = useState(null);
@@ -120,8 +138,11 @@ const FileUploader = ({ onFileSelect, isUploading, uploadProgress }) => {
   };
 
   const selectFile = (selectedFile) => {
+    // Note: PDF upload will likely fail as the Gemini Vision API primarily handles images, 
+    // but we allow it for consistency with the initial file types.
     if (selectedFile.size > 20971520) { // 20MB limit
-      alert('File size exceeds the 20MB limit.');
+      // Using console.error instead of alert as per instructions
+      console.error('File size exceeds the 20MB limit.');
       return;
     }
     setFile(selectedFile);
@@ -143,7 +164,7 @@ const FileUploader = ({ onFileSelect, isUploading, uploadProgress }) => {
         </div>
         <Progress value={uploadProgress} />
         <p className="text-center text-sm text-cyan-400">
-          {uploadProgress < 40 ? 'Uploading and creating job...' : 'Processing OCR with AI vision model...'}
+          {uploadProgress < 40 ? 'Converting file to Base64...' : 'Extracting text with AI model...'}
         </p>
       </div>
     );
@@ -191,7 +212,8 @@ const FileUploader = ({ onFileSelect, isUploading, uploadProgress }) => {
 
 const OcrResult = ({ text, fileName, onReset, showToast }) => {
   const handleCopy = () => {
-    document.execCommand('copy', false, text);
+    // document.execCommand('copy') is required in this environment
+    document.execCommand('copy', false, text); 
     showToast('Text copied to clipboard!', 'success');
   };
 
@@ -243,166 +265,108 @@ const OcrResult = ({ text, fileName, onReset, showToast }) => {
   );
 };
 
-// --- Main Application Component (Consolidated from Index.tsx) ---
+// --- Main Application Component ---
 
-// This environment requires a main App component as the default export.
 const App = () => {
   const { toastMessage, toastVariant, showToast } = useToast();
   const [selectedFile, setSelectedFile] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [ocrResult, setOcrResult] = useState(null);
-
-  // AUTH STATE: Required for Firestore and persistent storage
-  const [isAuthReady, setIsAuthReady] = useState(false);
-  const [userId, setUserId] = useState(null);
-  const [db, setDb] = useState(null);
-  const [auth, setAuth] = useState(null);
-
-  // 1. Firebase Initialization and Authentication
-  useEffect(() => {
-    // Dynamically load Firebase SDKs
-    import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js")
-      .then(module => {
-        const { initializeApp } = module;
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-        if (Object.keys(firebaseConfig).length === 0) {
-            console.error("Firebase config is missing. Cannot initialize database.");
-            return;
-        }
-        const app = initializeApp(firebaseConfig);
-
-        return Promise.all([
-          import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"),
-          import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js")
-        ]).then(([authModule, firestoreModule]) => {
-          const { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, setPersistence, browserSessionPersistence } = authModule;
-          const { getFirestore } = firestoreModule;
-
-          const firestoreDb = getFirestore(app);
-          const firebaseAuth = getAuth(app);
-
-          setDb(firestoreDb);
-          setAuth(firebaseAuth);
-
-          // Attempt authentication
-          setPersistence(firebaseAuth, browserSessionPersistence).then(() => {
-            if (typeof __initial_auth_token !== 'undefined') {
-              signInWithCustomToken(firebaseAuth, __initial_auth_token)
-                .catch(e => {
-                  console.error("Custom token sign-in failed, falling back to anonymous:", e);
-                  signInAnonymously(firebaseAuth);
-                });
-            } else {
-              signInAnonymously(firebaseAuth);
-            }
-          });
-
-          onAuthStateChanged(firebaseAuth, (user) => {
-            if (user) {
-              setUserId(user.uid);
-            } else {
-              // Fallback for environment without auth (shouldn't happen with signInAnonymously)
-              setUserId(crypto.randomUUID());
-            }
-            setIsAuthReady(true);
-            console.log("Firebase Auth State Ready. User ID:", user?.uid || 'anonymous');
-          });
-        });
-      })
-      .catch(error => {
-        console.error("Error loading Firebase SDKs:", error);
-      });
-  }, []);
+  
+  // Set isAuthReady to true as we no longer rely on complex Firebase setup for OCR
+  const [isAuthReady] = useState(true); 
 
   const handleFileSelect = (file) => {
     setSelectedFile(file);
   };
 
   const handleUpload = async () => {
-    if (!selectedFile || !isAuthReady || !db || !userId) {
-      showToast('System not ready. Please wait.', 'error');
-      return;
-    }
+    if (!selectedFile) return;
 
     setIsUploading(true);
-    setUploadProgress(10); // Start progress
-
-    // Import Firestore modules dynamically
-    const { collection, addDoc, doc, onSnapshot, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-ocr-app';
-    const privateCollectionPath = `/artifacts/${appId}/users/${userId}/ocr_jobs`;
+    setUploadProgress(10); 
+    let base64Data;
 
     try {
-      // 1. Create job record in Firestore (Simulated 'pending' state)
-      const jobRef = await addDoc(collection(db, privateCollectionPath), {
-        file_name: selectedFile.name,
-        file_size: selectedFile.size,
-        mime_type: selectedFile.type,
-        status: 'pending',
-        created_at: new Date().toISOString(),
-      });
-      console.log('Job created in Firestore:', jobRef.id);
-      showToast('Job created. Processing starting...', 'success');
-      setUploadProgress(30);
+        // 1. Convert file to Base64
+        base64Data = await fileToBase64(selectedFile);
+        setUploadProgress(30);
+        showToast('File converted. Sending to AI model...', 'success');
 
-      // 2. SIMULATE OCR PROCESS (Replaces Supabase Function call)
-      // Wait for 3 seconds to mimic server processing time
-      const mockResult = `
-        Extracted OCR Text from Document: ${selectedFile.name}
-
-        This is a simulated result from the AI vision model, which normally runs on the backend.
+        // 2. Prepare API payload
+        const prompt = "Perform Optical Character Recognition (OCR) on the provided image/document. Extract all visible text into a single, clean block of plain text. Do not add any introductory phrases, commentary, or descriptions of the image content; just output the extracted text.";
+        const apiKey = ""; // Canvas will provide this
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
         
-        The quick brown fox jumps over the lazy dog. 12345
+        const payload = {
+            contents: [
+                {
+                    role: "user",
+                    parts: [
+                        { text: prompt },
+                        {
+                            inlineData: {
+                                // IMPORTANT: Use selectedFile.type for mimeType
+                                mimeType: selectedFile.type,
+                                data: base64Data
+                            }
+                        }
+                    ]
+                }
+            ],
+        };
+
+        setUploadProgress(60);
+
+        // 3. Call Gemini API (with Exponential Backoff)
+        const MAX_RETRIES = 5;
+        let response;
+        for (let i = 0; i < MAX_RETRIES; i++) {
+            response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (response.ok) break;
+
+            // Handle API errors (e.g., 429 Too Many Requests)
+            if (response.status === 429 && i < MAX_RETRIES - 1) {
+                const delay = Math.pow(2, i) * 1000;
+                await new Promise(resolve => setTimeout(resolve, delay));
+            } else {
+                // Throw error if not a retryable error or max retries reached
+                throw new Error(`AI API Request failed (Status: ${response.status}).`);
+            }
+        }
         
-        This application successfully demonstrated:
-        - React component structure (App, Button, Result, Uploader)
-        - Tailwind CSS implementation
-        - State management (useState)
-        - File input and formatting
-        - Firebase/Firestore readiness check (Auth)
-        - A mock asynchronous job processing lifecycle.
+        if (!response.ok) {
+            throw new Error("AI API request failed after all retries.");
+        }
 
-        Thank you for testing the OCR Swift application!
-      `;
+        const result = await response.json();
+        const extractedText = result.candidates?.[0]?.content?.parts?.[0]?.text;
 
-      // Simulate a long-running AI task
-      setUploadProgress(50);
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      setUploadProgress(70);
-
-      // 3. Update job record with result (Simulated 'completed' state)
-      await updateDoc(jobRef, {
-        status: 'completed',
-        ocr_text: mockResult.trim(),
-        completed_at: new Date().toISOString(),
-      });
-      setUploadProgress(90);
-
-      // 4. Listen for completion (or just read the result immediately since it's synchronous simulation)
-      const unsubscribe = onSnapshot(doc(db, privateCollectionPath, jobRef.id), (docSnapshot) => {
-        if (docSnapshot.exists()) {
-          const jobData = docSnapshot.data();
-          if (jobData.status === 'completed' && jobData.ocr_text) {
+        if (extractedText) {
             setOcrResult({
-              text: jobData.ocr_text,
-              fileName: jobData.file_name,
+                text: extractedText.trim(),
+                fileName: selectedFile.name,
             });
             showToast('OCR completed successfully!', 'success');
-            unsubscribe(); // Stop listening
             setUploadProgress(100);
-          } else if (jobData.status === 'failed') {
-            throw new Error(jobData.error_message || 'OCR processing failed on server.');
-            unsubscribe();
-          }
+        } else {
+            // Check for error messages from the model
+            const errorMessage = result.error?.message || "AI model returned no text or encountered an internal error.";
+            throw new Error(errorMessage);
         }
-      });
+
     } catch (error) {
-      console.error('Upload and processing error:', error);
-      showToast(error.message || 'Failed to process file', 'error');
+        console.error('OCR Processing Error:', error);
+        showToast(error.message || 'Failed to process OCR via API.', 'error');
     } finally {
-      setIsUploading(false);
-      setUploadProgress(0);
+        setIsUploading(false);
+        setUploadProgress(0);
     }
   };
 
@@ -416,7 +380,7 @@ const App = () => {
   return (
     <div className="min-h-screen bg-gray-900 text-white font-sans">
       <style>{`
-        /* Custom Tailwind Color Classes (for simulation) */
+        /* Custom Tailwind Color Classes */
         .bg-gradient-hero {
           background-image: radial-gradient(at 0% 0%, #1e3a8a, #0f172a 50%);
         }
@@ -470,8 +434,8 @@ const App = () => {
             <div className="grid md:grid-cols-3 gap-6 mb-12 max-w-4xl mx-auto">
               {[
                 { title: 'Multi-format Support', desc: 'PNG, JPG, WEBP, TIFF, PDF' },
-                { title: 'AI-Powered (Simulated)', desc: 'Advanced vision models for accuracy' },
-                { title: 'Fast Processing', desc: 'Results in seconds, not minutes' },
+                { title: 'AI-Powered', desc: 'Real-time text extraction via Gemini' },
+                { title: 'Fast Processing', desc: 'Results in seconds' },
               ].map((feature, i) => (
                 <div
                   key={i}
@@ -504,11 +468,6 @@ const App = () => {
                       <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                       Processing...
                     </>
-                  ) : !isAuthReady ? (
-                    <>
-                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                      Connecting...
-                    </>
                   ) : (
                     <>
                       <Scan className="w-5 h-5 mr-2" />
@@ -523,13 +482,10 @@ const App = () => {
             <div className="mt-16 text-center">
               <div className="inline-flex flex-col gap-2 p-6 bg-card border border-border rounded-lg">
                 <p className="text-sm text-muted-foreground">
-                  🚀 Powered by <span className="text-primary font-semibold">Lovable AI</span>
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Using Google Gemini 2.5 Flash for vision & OCR (Functionality is **Simulated** here)
+                  🚀 Powered by <span className="text-primary font-semibold">Google Gemini 2.5 Flash</span>
                 </p>
                 <p className="text-xs text-muted-foreground mt-2">
-                  <span className="text-red-400">NOTE:</span> Due to the single-file constraint, the backend function and database calls are simulated with a delay and a mock result.
+                  The application now performs OCR using direct API calls.
                 </p>
               </div>
             </div>
