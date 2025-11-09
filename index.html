@@ -45,7 +45,7 @@
             ocrResult: null,
             fileName: '',
             error: null,
-            tesseractWorker: null, 
+            // REMOVED: tesseractWorker is no longer needed in state
         };
         
         // --- Core OCR Logic (Tesseract.js) ---
@@ -54,34 +54,24 @@
 
             state.isProcessing = true;
             state.error = null;
-            renderApp(); // CRITICAL: Rerender to show the "Processing..." state
+            renderApp(); // Rerender to show the "Processing..." state
 
             try {
-                // 1. Create or load the Tesseract Worker
-                if (!state.tesseractWorker) {
-                    
-                    // FIX: Create worker *without* the logger property to avoid the DataCloneError
-                    state.tesseractWorker = await Tesseract.createWorker();
-
-                    // Optional: Listen for messages on the worker directly (avoids cloning issues)
-                    state.tesseractWorker.onmessage = m => {
-                        if (m.data.status === 'recognizing') {
-                            console.log(`OCR Progress (Direct): ${(m.data.progress * 100).toFixed(0)}%`); 
+                // FIX: Use the modern Tesseract.recognize() method for a single, reliable call.
+                // This handles worker creation, loading, and initialization internally.
+                const { data: { text } } = await Tesseract.recognize(
+                    state.selectedFile,
+                    DEFAULT_LANG,
+                    {
+                        // The logger property is safe here because it's passed to Tesseract.recognize, 
+                        // not directly to the worker creation in a problematic way.
+                        logger: m => {
+                            if (m.status === 'recognizing') {
+                                console.log(`OCR Progress: ${(m.progress * 100).toFixed(0)}%`); 
+                            }
                         }
-                    };
-
-                    await state.tesseractWorker.load();
-                    await state.tesseractWorker.loadLanguage(DEFAULT_LANG);
-                    await state.tesseractWorker.initialize(DEFAULT_LANG);
-                }
-
-                const status = await state.tesseractWorker.getStatus();
-                if (status.status !== 'initialized') {
-                    throw new Error(`Worker not initialized. Status: ${status.status}`);
-                }
-
-                // 2. Run OCR using the selected file
-                const { data: { text } } = await state.tesseractWorker.recognize(state.selectedFile);
+                    }
+                );
 
                 const extractedText = text.trim();
 
@@ -94,9 +84,12 @@
             } catch (error) {
                 console.error("Tesseract.js OCR Error:", error);
                 let userError = "OCR failed. This is often due to an **initial download failure** (check your network/browser console) or a low-quality image.";
-                if (error.message.includes("Worker not initialized")) {
-                    userError = "Worker failed to load. Try clearing your browser cache and reloading the page.";
+                
+                // If it's a TypeError, it usually means Tesseract couldn't read the file itself
+                if (error instanceof TypeError) {
+                    userError = "OCR failed due to an image decoding error. Ensure the image is a valid PNG, JPG, or WEBP file."
                 }
+                
                 state.error = userError;
                 state.ocrResult = null;
             } finally {
@@ -105,7 +98,7 @@
             }
         };
         
-        // --- Utility & Event Handlers ---
+        // --- Utility & Event Handlers (No Changes) ---
 
         const preventDefaults = (e) => {
             e.preventDefault();
@@ -150,7 +143,7 @@
             renderApp();
         };
         
-        // --- HTML Rendering Functions ---
+        // --- HTML Rendering Functions (No Changes) ---
 
         const renderApp = () => {
             const app = document.getElementById('app');
@@ -297,7 +290,7 @@
                     <div class="text-center">
                         <i data-lucide="loader" class="w-12 h-12 mx-auto text-primary animate-spin mb-2"></i>
                         <p class="font-semibold text-primary">Processing...</p>
-                        <p class="text-sm text-gray-500">Initializing Wasm worker (may take up to 30 seconds on first run).</p>
+                        <p class="text-sm text-gray-500">Downloading language data and running OCR.</p>
                     </div>
                  `;
             } else {
