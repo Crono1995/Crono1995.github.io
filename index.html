@@ -10,14 +10,15 @@
     <style>
         /* Custom styles based on the original component, using standard hex codes */
         .bg-gradient-hero { background-color: #f9fafb; }
-        .bg-gradient-primary { background: linear-gradient(90deg, #10b981, #059669); /* Changed to a Green gradient */ }
+        /* Green gradient for the free OCR tool */
+        .bg-gradient-primary { background: linear-gradient(90deg, #10b981, #059669); } 
         .bg-gradient-clip {
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
         }
         /* Define custom primary/card colors based on Tailwind defaults */
-        .text-primary { color: #059669; /* Green */ }
+        .text-primary { color: #059669; }
         .bg-primary\/10 { background-color: rgba(5, 150, 105, 0.1); }
         .border-primary\/20 { border-color: rgba(5, 150, 105, 0.2); }
         .bg-card { background-color: white; }
@@ -36,9 +37,8 @@
 
     <script>
         // --- Configuration ---
-        // NO API KEY REQUIRED FOR TESSERACT.JS!
         const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB limit
-        const DEFAULT_LANG = 'eng'; // English is the default
+        const DEFAULT_LANG = 'eng'; 
 
         // --- State Management ---
         let state = {
@@ -47,31 +47,31 @@
             ocrResult: null,
             fileName: '',
             error: null,
-            tesseractWorker: null, // Tesseract worker instance
+            tesseractWorker: null, 
         };
-
-        // --- Core OCR Logic (Replaced Gemini with Tesseract.js) ---
+        
+        // --- Core OCR Logic (Tesseract.js) ---
         const handleExtract = async () => {
             if (!state.selectedFile || state.isProcessing) return;
 
             state.isProcessing = true;
             state.error = null;
-            renderApp();
+            renderApp(); // Rerender to show the "Processing..." state
 
             try {
                 // 1. Create or load the Tesseract Worker
                 if (!state.tesseractWorker) {
+                    // console.log("Initializing Tesseract Worker...");
                     state.tesseractWorker = await Tesseract.createWorker({
-                         // Shows progress in the console. Can be used to update a progress bar.
                         logger: m => console.log(m) 
                     });
-                    // Load the core and language data
                     await state.tesseractWorker.load();
                     await state.tesseractWorker.loadLanguage(DEFAULT_LANG);
                     await state.tesseractWorker.initialize(DEFAULT_LANG);
                 }
 
                 // 2. Run OCR using the selected file
+                // console.log("Starting recognition...");
                 const { data: { text } } = await state.tesseractWorker.recognize(state.selectedFile);
 
                 const extractedText = text.trim();
@@ -84,23 +84,21 @@
 
             } catch (error) {
                 console.error("Tesseract.js OCR Error:", error);
-                state.error = "Failed to process the image. Check the console for Tesseract-specific errors. Try a high-quality image.";
+                state.error = "Failed to process the image. Check console for details. Try a high-quality image.";
                 state.ocrResult = null;
             } finally {
                 state.isProcessing = false;
-                renderApp();
+                renderApp(); // Rerender to show result or error
             }
         };
         
-        // --- Remaining Helper Functions (Unchanged or minor tweaks) ---
+        // --- Utility & Event Handlers ---
 
-        // Utility: Prevents default browser behaviors for drag and drop
         const preventDefaults = (e) => {
             e.preventDefault();
             e.stopPropagation();
         };
 
-        // Handler: Handles file drop event
         const handleDrop = (e) => {
             const file = e.dataTransfer.files[0];
             if (file) {
@@ -109,23 +107,30 @@
             }
         };
 
-        // Handler: Handles file input change event
         const handleFileChange = (event) => {
             const file = event.target.files[0];
-            if (file) {
+            
+            // FIX: If files is empty (e.g., user opened and cancelled dialog), clear state
+            if (!file) {
+                state.selectedFile = null;
+                state.fileName = '';
+                state.error = null;
+            } else {
                 if (file.size > MAX_FILE_SIZE) {
                     state.error = 'File size exceeds the 20MB limit. Please choose a smaller file.';
                     state.selectedFile = null;
                 } else {
+                    // CRITICAL: Update state here
                     state.selectedFile = file;
                     state.fileName = file.name;
                     state.error = null;
                 }
-                renderApp();
             }
+            
+            // CRITICAL FIX: Force UI refresh to make the button appear
+            renderApp(); 
         };
 
-        // Handler: Resets the application state
         const handleReset = () => {
             state.selectedFile = null;
             state.ocrResult = null;
@@ -135,7 +140,7 @@
             renderApp();
         };
         
-        // --- HTML Rendering Functions (Styling and content updated) ---
+        // --- HTML Rendering Functions ---
 
         const renderApp = () => {
             const app = document.getElementById('app');
@@ -147,7 +152,7 @@
                 app.appendChild(MainScreen());
             }
             
-            // Re-render Lucide icons after every DOM update
+            // FIX: Ensure Lucide icons are rendered after every DOM update
             lucide.createIcons();
         };
 
@@ -247,9 +252,14 @@
                 </div>
             `;
             
-            // Event listeners (unchanged)
+            // Event listeners
             const fileInput = div.querySelector('#fileInput');
-            if (fileInput) fileInput.onchange = handleFileChange;
+            if (fileInput) {
+                fileInput.onchange = handleFileChange;
+                // FIX: Clears the value when clicked, ensuring the 'change' event fires 
+                // even if the same file is selected again.
+                fileInput.addEventListener('click', () => { fileInput.value = null; });
+            }
             
             const dropArea = div.querySelector('#dropArea');
             if (dropArea) {
@@ -275,7 +285,7 @@
                         <i data-lucide="file-check" class="w-12 h-12 mx-auto text-green-500 mb-2"></i>
                         <p class="font-semibold">${state.selectedFile.name}</p>
                         <p class="text-sm text-gray-500">Ready to process.</p>
-                        <button id="clearFile" class="mt-2 text-red-500 text-sm hover:underline">Clear File</button>
+                        <button type="button" id="clearFile" class="mt-2 text-red-500 text-sm hover:underline">Clear File</button>
                     </div>
                 `;
             } else if (state.isProcessing) {
