@@ -45,7 +45,6 @@
             ocrResult: null,
             fileName: '',
             error: null,
-            // REMOVED: tesseractWorker is no longer needed in state
         };
         
         // --- Core OCR Logic (Tesseract.js) ---
@@ -54,17 +53,16 @@
 
             state.isProcessing = true;
             state.error = null;
-            renderApp(); // Rerender to show the "Processing..." state
+            // Rerender to show the "Processing..." state
+            renderApp(); 
 
             try {
-                // FIX: Use the modern Tesseract.recognize() method for a single, reliable call.
-                // This handles worker creation, loading, and initialization internally.
+                // Using the modern Tesseract.recognize() method for a single, reliable call.
                 const { data: { text } } = await Tesseract.recognize(
                     state.selectedFile,
                     DEFAULT_LANG,
                     {
-                        // The logger property is safe here because it's passed to Tesseract.recognize, 
-                        // not directly to the worker creation in a problematic way.
+                        // Safe logger function for progress tracking
                         logger: m => {
                             if (m.status === 'recognizing') {
                                 console.log(`OCR Progress: ${(m.progress * 100).toFixed(0)}%`); 
@@ -76,6 +74,7 @@
                 const extractedText = text.trim();
 
                 if (!extractedText) {
+                    // This is the source of the error message you are seeing.
                     throw new Error("Tesseract.js extracted no text. Check image quality.");
                 }
 
@@ -83,10 +82,12 @@
 
             } catch (error) {
                 console.error("Tesseract.js OCR Error:", error);
-                let userError = "OCR failed. This is often due to an **initial download failure** (check your network/browser console) or a low-quality image.";
                 
-                // If it's a TypeError, it usually means Tesseract couldn't read the file itself
-                if (error instanceof TypeError) {
+                let userError = "OCR failed. This is often due to an **initial download failure** or a low-quality image.";
+                
+                if (error.message.includes("extracted no text")) {
+                     userError = "OCR failed. No legible text was found. Please ensure the image is high-quality and has clear contrast.";
+                } else if (error instanceof TypeError) {
                     userError = "OCR failed due to an image decoding error. Ensure the image is a valid PNG, JPG, or WEBP file."
                 }
                 
@@ -94,11 +95,12 @@
                 state.ocrResult = null;
             } finally {
                 state.isProcessing = false;
-                renderApp(); // Rerender to show result or error
+                // Rerender to show result or error
+                renderApp(); 
             }
         };
         
-        // --- Utility & Event Handlers (No Changes) ---
+        // --- Utility & Event Handlers ---
 
         const preventDefaults = (e) => {
             e.preventDefault();
@@ -143,7 +145,7 @@
             renderApp();
         };
         
-        // --- HTML Rendering Functions (No Changes) ---
+        // --- HTML Rendering Functions ---
 
         const renderApp = () => {
             const app = document.getElementById('app');
