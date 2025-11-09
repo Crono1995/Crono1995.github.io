@@ -60,9 +60,9 @@
                 // 1. Create or load the Tesseract Worker
                 if (!state.tesseractWorker) {
                     
-                    // FIX: Simplified logger function to resolve DataCloneError
+                    // FIX: Using the traditional function syntax to resolve the DataCloneError
                     const workerOptions = { 
-                        logger: m => {
+                        logger: function(m) { 
                             if (m.status === 'recognizing') {
                                 console.log(`OCR Progress: ${(m.progress * 100).toFixed(0)}%`); 
                             }
