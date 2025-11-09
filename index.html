@@ -10,14 +10,12 @@
     <style>
         /* Custom styles based on the original component, using standard hex codes */
         .bg-gradient-hero { background-color: #f9fafb; }
-        /* Green gradient for the free OCR tool */
         .bg-gradient-primary { background: linear-gradient(90deg, #10b981, #059669); } 
         .bg-gradient-clip {
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
         }
-        /* Define custom primary/card colors based on Tailwind defaults */
         .text-primary { color: #059669; }
         .bg-primary\/10 { background-color: rgba(5, 150, 105, 0.1); }
         .border-primary\/20 { border-color: rgba(5, 150, 105, 0.2); }
@@ -63,7 +61,6 @@
                 if (!state.tesseractWorker) {
                     state.tesseractWorker = await Tesseract.createWorker({ 
                         logger: m => {
-                            // Log progress to the console
                             if (m.status === 'recognizing') {
                                 console.log(`OCR Progress: ${(m.progress * 100).toFixed(0)}%`); 
                             }
@@ -275,6 +272,7 @@
                 dropArea.addEventListener('drop', handleDrop, false);
             }
 
+            // FIX: Ensure clear file button is attached immediately on render
             const clearFileButton = div.querySelector('#clearFile');
             if (clearFileButton) clearFileButton.onclick = handleReset;
 
@@ -312,9 +310,8 @@
         document.addEventListener('DOMContentLoaded', renderApp);
         
         // CRITICAL FIX: Event Delegation for the Extract Button
-        // Attaches a permanent listener to the document to catch clicks on the dynamically rendered button.
+        // Catches clicks on the dynamically rendered button, no matter when it's created.
         document.addEventListener('click', (event) => {
-            // Check if the clicked element or its parent is the extract button
             if (event.target.id === 'extractButton' || event.target.closest('#extractButton')) {
                 event.preventDefault(); 
                 handleExtract();
