@@ -59,13 +59,18 @@
             try {
                 // 1. Create or load the Tesseract Worker
                 if (!state.tesseractWorker) {
-                    state.tesseractWorker = await Tesseract.createWorker({ 
+                    
+                    // FIX: Simplified logger function to resolve DataCloneError
+                    const workerOptions = { 
                         logger: m => {
                             if (m.status === 'recognizing') {
                                 console.log(`OCR Progress: ${(m.progress * 100).toFixed(0)}%`); 
                             }
                         }
-                    });
+                    };
+                    
+                    state.tesseractWorker = await Tesseract.createWorker(workerOptions);
+
                     await state.tesseractWorker.load();
                     await state.tesseractWorker.loadLanguage(DEFAULT_LANG);
                     await state.tesseractWorker.initialize(DEFAULT_LANG);
@@ -272,7 +277,6 @@
                 dropArea.addEventListener('drop', handleDrop, false);
             }
 
-            // FIX: Ensure clear file button is attached immediately on render
             const clearFileButton = div.querySelector('#clearFile');
             if (clearFileButton) clearFileButton.onclick = handleReset;
 
@@ -310,7 +314,6 @@
         document.addEventListener('DOMContentLoaded', renderApp);
         
         // CRITICAL FIX: Event Delegation for the Extract Button
-        // Catches clicks on the dynamically rendered button, no matter when it's created.
         document.addEventListener('click', (event) => {
             if (event.target.id === 'extractButton' || event.target.closest('#extractButton')) {
                 event.preventDefault(); 
