@@ -3,80 +3,143 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gemini Vision OCR - GitHub Pages</title>
+    <title>Tesseract.js OCR - GitHub Pages</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://unpkg.com/@google/genai@latest/dist/client.js"></script>
+    <script src="https://unpkg.com/tesseract.js@5.0.3/dist/tesseract.min.js"></script>
     <style>
-        /* Custom styles based on the original component */
-        .bg-gradient-hero {
-            background: linear-gradient(180deg, #f9fafb 0%, #ffffff 100%);
-        }
-        .bg-gradient-primary {
-            background: linear-gradient(90deg, #4f46e5, #7c3aed);
-        }
+        /* Custom styles based on the original component, using standard hex codes */
+        .bg-gradient-hero { background-color: #f9fafb; }
+        .bg-gradient-primary { background: linear-gradient(90deg, #10b981, #059669); /* Changed to a Green gradient */ }
         .bg-gradient-clip {
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
         }
+        /* Define custom primary/card colors based on Tailwind defaults */
+        .text-primary { color: #059669; /* Green */ }
+        .bg-primary\/10 { background-color: rgba(5, 150, 105, 0.1); }
+        .border-primary\/20 { border-color: rgba(5, 150, 105, 0.2); }
         .bg-card { background-color: white; }
         .border-border { border-color: #e5e7eb; }
-        .text-primary { color: #4f46e5; }
-        .hover\:border-primary\/50:hover { border-color: rgba(79, 70, 229, 0.5); }
         .variant-gradient {
-            background: linear-gradient(90deg, #4f46e5, #7c3aed);
+            background: linear-gradient(90deg, #10b981, #059669);
             color: white;
+            border: none;
         }
     </style>
 </head>
-<body class="bg-gradient-hero min-h-screen">
+<body class="bg-gradient-hero min-h-screen text-gray-800">
     <div id="app" class="container mx-auto px-6 py-12">
-        </div>
+        <div class="text-center p-20">Loading application...</div>
+    </div>
 
     <script>
         // --- Configuration ---
-        // !!! IMPORTANT: NEVER STORE YOUR GEMINI API KEY DIRECTLY IN A PUBLIC REPOSITORY !!!
-        // This is for demonstration on GitHub Pages only.
-        // For production, use a secure backend proxy to protect your key.
-        const GEMINI_API_KEY = "YOUR_GEMINI_API_KEY_HERE";
-        const MODEL_NAME = "gemini-2.5-flash";
+        // NO API KEY REQUIRED FOR TESSERACT.JS!
+        const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB limit
+        const DEFAULT_LANG = 'eng'; // English is the default
 
-        // --- Utility Functions ---
-
-        /** Converts a File object to a base64 Data URL expected by the Gemini API. */
-        const fileToGenerativePart = async (file) => {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = () => {
-                    const base64Data = reader.result.split(',')[1];
-                    resolve({
-                        inlineData: {
-                            data: base64Data,
-                            mimeType: file.type,
-                        },
-                    });
-                };
-                reader.onerror = reject;
-                reader.readAsDataURL(file);
-            });
-        };
-
-        // --- State Management (Simple object-based state) ---
+        // --- State Management ---
         let state = {
             selectedFile: null,
             isProcessing: false,
             ocrResult: null,
             fileName: '',
             error: null,
-            geminiClient: null,
+            tesseractWorker: null, // Tesseract worker instance
         };
 
-        // --- Component Rendering Functions (Simplified for vanilla JS) ---
+        // --- Core OCR Logic (Replaced Gemini with Tesseract.js) ---
+        const handleExtract = async () => {
+            if (!state.selectedFile || state.isProcessing) return;
+
+            state.isProcessing = true;
+            state.error = null;
+            renderApp();
+
+            try {
+                // 1. Create or load the Tesseract Worker
+                if (!state.tesseractWorker) {
+                    state.tesseractWorker = await Tesseract.createWorker({
+                         // Shows progress in the console. Can be used to update a progress bar.
+                        logger: m => console.log(m) 
+                    });
+                    // Load the core and language data
+                    await state.tesseractWorker.load();
+                    await state.tesseractWorker.loadLanguage(DEFAULT_LANG);
+                    await state.tesseractWorker.initialize(DEFAULT_LANG);
+                }
+
+                // 2. Run OCR using the selected file
+                const { data: { text } } = await state.tesseractWorker.recognize(state.selectedFile);
+
+                const extractedText = text.trim();
+
+                if (!extractedText) {
+                    throw new Error("Tesseract.js could not extract any text. The image may be too distorted or low resolution.");
+                }
+
+                state.ocrResult = extractedText;
+
+            } catch (error) {
+                console.error("Tesseract.js OCR Error:", error);
+                state.error = "Failed to process the image. Check the console for Tesseract-specific errors. Try a high-quality image.";
+                state.ocrResult = null;
+            } finally {
+                state.isProcessing = false;
+                renderApp();
+            }
+        };
+        
+        // --- Remaining Helper Functions (Unchanged or minor tweaks) ---
+
+        // Utility: Prevents default browser behaviors for drag and drop
+        const preventDefaults = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+        };
+
+        // Handler: Handles file drop event
+        const handleDrop = (e) => {
+            const file = e.dataTransfer.files[0];
+            if (file) {
+                const mockEvent = { target: { files: [file] } };
+                handleFileChange(mockEvent);
+            }
+        };
+
+        // Handler: Handles file input change event
+        const handleFileChange = (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                if (file.size > MAX_FILE_SIZE) {
+                    state.error = 'File size exceeds the 20MB limit. Please choose a smaller file.';
+                    state.selectedFile = null;
+                } else {
+                    state.selectedFile = file;
+                    state.fileName = file.name;
+                    state.error = null;
+                }
+                renderApp();
+            }
+        };
+
+        // Handler: Resets the application state
+        const handleReset = () => {
+            state.selectedFile = null;
+            state.ocrResult = null;
+            state.isProcessing = false;
+            state.fileName = '';
+            state.error = null;
+            renderApp();
+        };
+        
+        // --- HTML Rendering Functions (Styling and content updated) ---
 
         const renderApp = () => {
             const app = document.getElementById('app');
-            app.innerHTML = ''; // Clear previous content
+            app.innerHTML = ''; 
 
             if (state.ocrResult) {
                 app.appendChild(OcrResult(state.ocrResult, state.fileName));
@@ -84,7 +147,7 @@
                 app.appendChild(MainScreen());
             }
             
-            // Re-render Lucide icons after DOM update
+            // Re-render Lucide icons after every DOM update
             lucide.createIcons();
         };
 
@@ -92,25 +155,25 @@
             const div = document.createElement('div');
             div.className = "py-12";
             div.innerHTML = `
-                <div class="max-w-4xl mx-auto bg-card border border-border rounded-lg shadow-xl p-8">
+                <div class="max-w-4xl mx-auto bg-card border border-border rounded-xl shadow-2xl p-8">
                     <div class="flex items-center justify-between mb-6 border-b pb-4">
                         <h2 class="text-2xl font-bold text-primary flex items-center">
                             <i data-lucide="check-circle" class="w-6 h-6 mr-2"></i>
                             OCR Complete
                         </h2>
-                        <button id="resetButton" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition">
+                        <button id="resetButton" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition">
                             Process Another
                         </button>
                     </div>
                     <p class="text-sm text-gray-500 mb-4">
                         Text extracted from: <span class="font-semibold">${fileName}</span>
                     </p>
-                    <div class="bg-gray-50 border border-gray-200 p-6 rounded-lg whitespace-pre-wrap max-h-[500px] overflow-y-auto">
+                    <div class="bg-gray-50 border border-gray-200 p-6 rounded-lg whitespace-pre-wrap max-h-[500px] overflow-y-auto font-mono text-sm">
                         ${text}
                     </div>
-                    <button id="copyButton" class="mt-4 w-full px-4 py-2 variant-gradient rounded-md hover:opacity-90 transition">
+                    <button id="copyButton" class="mt-4 w-full px-4 py-3 variant-gradient rounded-lg hover:opacity-90 transition font-semibold text-lg">
                         <i data-lucide="copy" class="w-5 h-5 mr-2 inline-block"></i>
-                        Copy Text
+                        Copy Extracted Text
                     </button>
                 </div>
             `;
@@ -129,7 +192,7 @@
                 <div class="text-center mb-12 space-y-4">
                     <div class="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-full border border-primary/20">
                         <i data-lucide="scan" class="w-5 h-5 text-primary"></i>
-                        <span class="text-sm font-medium text-primary">AI-Powered Vision OCR</span>
+                        <span class="text-sm font-medium text-primary">FREE In-Browser OCR</span>
                     </div>
                     <h1 class="text-5xl font-bold tracking-tight">
                         Extract Text from Any
@@ -138,29 +201,34 @@
                         </span>
                     </h1>
                     <p class="text-xl text-gray-500 max-w-2xl mx-auto">
-                        Upload images and get accurate OCR results powered by Google Gemini vision.
+                        100% free OCR running directly in your browser using the Tesseract.js library. No API key needed.
                     </p>
-                    ${state.error ? `<div class="mt-4 p-3 bg-red-100 text-red-700 rounded-md max-w-lg mx-auto">${state.error}</div>` : ''}
+                    ${state.error ? `<div class="mt-4 p-4 bg-red-100 text-red-700 border border-red-200 rounded-lg max-w-lg mx-auto font-medium">${state.error}</div>` : ''}
                 </div>
 
                 <div class="grid md:grid-cols-3 gap-6 mb-12 max-w-4xl mx-auto">
                     ${[
-                        { title: 'Multi-format Support', desc: 'PNG, JPG, WEBP, HEIC' },
-                        { title: 'Gemini Vision', desc: 'Advanced AI for high accuracy' },
-                        { title: 'Frontend Only', desc: 'Works as a static page' },
+                        { title: '100% Free', desc: 'No limits, no costs, runs entirely in-browser.' },
+                        { title: 'Pure JavaScript', desc: 'Uses WebAssembly (Wasm) for local processing.' },
+                        { title: 'Privacy Focused', desc: 'Your image never leaves your computer.' },
                     ].map((feature, i) => `
-                        <div key="${i}" class="bg-card border border-border rounded-lg p-6 hover:border-primary/50 transition-all hover:shadow-lg">
+                        <div class="bg-card border border-border rounded-lg p-6 hover:border-primary/50 transition-all hover:shadow-lg" key="${i}">
                             <h3 class="font-semibold mb-2">${feature.title}</h3>
                             <p class="text-sm text-gray-500">${feature.desc}</p>
                         </div>
                     `).join('')}
                 </div>
 
-                ${FileUploader()}
+                <div class="max-w-2xl mx-auto">
+                    <label id="dropArea" class="block w-full cursor-pointer rounded-xl border-2 border-dashed border-gray-300 p-12 text-center transition-all hover:border-primary/50 bg-white shadow-lg">
+                        <input id="fileInput" type="file" class="sr-only" accept="image/jpeg,image/png,image/webp">
+                        ${FileUploaderContent()}
+                    </label>
+                </div>
 
                 ${state.selectedFile && !state.isProcessing ? `
                     <div class="flex justify-center mt-6">
-                        <button id="extractButton" class="px-8 py-3 variant-gradient rounded-full shadow-lg hover:shadow-xl transition-all text-lg font-semibold">
+                        <button id="extractButton" class="px-10 py-3 variant-gradient rounded-full shadow-xl hover:shadow-2xl transition-all text-lg font-semibold">
                             <i data-lucide="scan" class="w-5 h-5 mr-2 inline-block"></i>
                             Extract Text
                         </button>
@@ -170,16 +238,16 @@
                 <div class="mt-16 text-center">
                     <div class="inline-flex flex-col gap-2 p-6 bg-card border border-border rounded-lg">
                         <p class="text-sm text-gray-500">
-                            🚀 Powered by <span class="text-primary font-semibold">Gemini API</span>
+                            🚀 Powered by <span class="text-primary font-semibold">Tesseract.js</span>
                         </p>
                         <p class="text-xs text-gray-500">
-                            Using Google Gemini 2.5 Flash for vision & OCR.
+                            The industry-standard open-source OCR engine.
                         </p>
                     </div>
                 </div>
             `;
             
-            // Event listeners
+            // Event listeners (unchanged)
             const fileInput = div.querySelector('#fileInput');
             if (fileInput) fileInput.onchange = handleFileChange;
             
@@ -194,142 +262,41 @@
             const extractButton = div.querySelector('#extractButton');
             if (extractButton) extractButton.onclick = handleExtract;
 
+            const clearFileButton = div.querySelector('#clearFile');
+            if (clearFileButton) clearFileButton.onclick = handleReset;
+
             return div;
         };
         
-        const FileUploader = () => {
-            let content = '';
+        const FileUploaderContent = () => {
             if (state.selectedFile) {
-                content = `
+                return `
                     <div class="text-center">
                         <i data-lucide="file-check" class="w-12 h-12 mx-auto text-green-500 mb-2"></i>
                         <p class="font-semibold">${state.selectedFile.name}</p>
-                        <p class="text-sm text-gray-500">Ready to process. Click 'Extract Text' below.</p>
+                        <p class="text-sm text-gray-500">Ready to process.</p>
                         <button id="clearFile" class="mt-2 text-red-500 text-sm hover:underline">Clear File</button>
                     </div>
                 `;
             } else if (state.isProcessing) {
-                 content = `
+                 return `
                     <div class="text-center">
                         <i data-lucide="loader" class="w-12 h-12 mx-auto text-primary animate-spin mb-2"></i>
                         <p class="font-semibold text-primary">Processing...</p>
-                        <p class="text-sm text-gray-500">Extracting text using Gemini Vision API.</p>
+                        <p class="text-sm text-gray-500">Initializing Wasm worker (may take a moment on first run).</p>
                     </div>
                  `;
             } else {
-                 content = `
+                 return `
                     <i data-lucide="file-up" class="w-12 h-12 mx-auto text-gray-400 mb-3"></i>
                     <p class="mb-2 font-semibold">Drag & drop an image here, or <span class="text-primary hover:text-indigo-600 transition cursor-pointer">browse</span></p>
-                    <p class="text-xs text-gray-500">Max size 20MB. Supported: JPG, PNG, WEBP, HEIC.</p>
+                    <p class="text-xs text-gray-500">Max size 20MB. Note: Accuracy depends heavily on image quality!</p>
                  `;
             }
-
-            const div = document.createElement('div');
-            div.className = "max-w-2xl mx-auto";
-            div.innerHTML = `
-                <label id="dropArea" class="block w-full cursor-pointer rounded-xl border-2 border-dashed border-gray-300 p-12 text-center transition-all hover:border-primary/50 bg-white shadow-md">
-                    <input id="fileInput" type="file" class="sr-only" accept="image/jpeg,image/png,image/webp,image/heic">
-                    ${content}
-                </label>
-            `;
-
-            if (state.selectedFile) {
-                div.querySelector('#clearFile').onclick = handleReset;
-            }
-
-            return div.innerHTML;
-        };
-
-        // --- Event Handlers ---
-
-        const handleFileChange = (event) => {
-            const file = event.target.files[0];
-            if (file) {
-                if (file.size > 20 * 1024 * 1024) { // 20MB limit
-                    state.error = 'File size exceeds the 20MB limit.';
-                    state.selectedFile = null;
-                } else {
-                    state.selectedFile = file;
-                    state.fileName = file.name;
-                    state.error = null;
-                }
-                renderApp();
-            }
-        };
-
-        const preventDefaults = (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-        };
-
-        const handleDrop = (e) => {
-            const dt = e.dataTransfer;
-            const file = dt.files[0];
-            if (file) {
-                // Manually trigger the file change handler logic
-                const mockEvent = { target: { files: [file] } };
-                handleFileChange(mockEvent);
-            }
-        };
-
-        const handleExtract = async () => {
-            if (!state.selectedFile || state.isProcessing) return;
-
-            state.isProcessing = true;
-            state.error = null;
-            renderApp();
-
-            try {
-                if (!state.geminiClient) {
-                    state.geminiClient = new google.genai.GoogleGenAI(GEMINI_API_KEY);
-                }
-
-                // Convert file to a part for the API call
-                const imagePart = await fileToGenerativePart(state.selectedFile);
-
-                // Call the Gemini API for OCR
-                const prompt = "You are an expert OCR system. Extract ALL text content from this image or document. Do not include any commentary, explanations, or analysis. Just output the raw extracted text in a clean, readable format, preserving line breaks and structure as much as possible.";
-                
-                const response = await state.geminiClient.models.generateContent({
-                    model: MODEL_NAME,
-                    contents: [imagePart, prompt],
-                });
-
-                const extractedText = response.text.trim();
-
-                if (!extractedText) {
-                    throw new Error("Gemini returned an empty result. Could not extract text.");
-                }
-
-                state.ocrResult = extractedText;
-                
-            } catch (error) {
-                console.error("Gemini OCR Error:", error);
-                state.error = "Failed to process the image. Check the console for details, or ensure your API key is correct and you have an active network connection.";
-                state.ocrResult = null; // Clear result on error
-            } finally {
-                state.isProcessing = false;
-                renderApp();
-            }
-        };
-
-        const handleReset = () => {
-            state.selectedFile = null;
-            state.ocrResult = null;
-            state.isProcessing = false;
-            state.fileName = '';
-            state.error = null;
-            renderApp();
         };
 
         // --- Initialization ---
-
-        document.addEventListener('DOMContentLoaded', () => {
-            if (GEMINI_API_KEY === "YOUR_GEMINI_API_KEY_HERE" || !GEMINI_API_KEY) {
-                state.error = "⚠️ Please replace 'YOUR_GEMINI_API_KEY_HERE' in the script with your actual Gemini API Key to enable functionality.";
-            }
-            renderApp();
-        });
+        document.addEventListener('DOMContentLoaded', renderApp);
     </script>
 </body>
 </html>
