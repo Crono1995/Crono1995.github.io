@@ -62,12 +62,24 @@
                 // 1. Create or load the Tesseract Worker
                 if (!state.tesseractWorker) {
                     // console.log("Initializing Tesseract Worker...");
-                    state.tesseractWorker = await Tesseract.createWorker({
-                        logger: m => console.log(m) 
+                    state.tesseractWorker = await Tesseract.createWorker({ 
+                        // Logger is useful for debugging in the console
+                        logger: m => {
+                            if (m.status === 'recognizing') {
+                                // Update progress in the console or a progress bar if needed
+                                console.log(`OCR Progress: ${(m.progress * 100).toFixed(0)}%`); 
+                            }
+                        }
                     });
                     await state.tesseractWorker.load();
                     await state.tesseractWorker.loadLanguage(DEFAULT_LANG);
                     await state.tesseractWorker.initialize(DEFAULT_LANG);
+                }
+
+                // Check worker status before recognizing (safety check)
+                const status = await state.tesseractWorker.getStatus();
+                if (status.status !== 'initialized') {
+                    throw new Error(`Worker not initialized. Status: ${status.status}`);
                 }
 
                 // 2. Run OCR using the selected file
@@ -77,14 +89,19 @@
                 const extractedText = text.trim();
 
                 if (!extractedText) {
-                    throw new Error("Tesseract.js could not extract any text. The image may be too distorted or low resolution.");
+                    throw new Error("Tesseract.js extracted no text. Check image quality.");
                 }
 
                 state.ocrResult = extractedText;
 
             } catch (error) {
                 console.error("Tesseract.js OCR Error:", error);
-                state.error = "Failed to process the image. Check console for details. Try a high-quality image.";
+                // Enhanced error message for the user
+                let userError = "OCR failed. This is often due to an **initial download failure** (check your network/browser console) or a low-quality image.";
+                if (error.message.includes("Worker not initialized")) {
+                    userError = "Worker failed to load. Try clearing your browser cache and reloading the page.";
+                }
+                state.error = userError;
                 state.ocrResult = null;
             } finally {
                 state.isProcessing = false;
@@ -110,7 +127,6 @@
         const handleFileChange = (event) => {
             const file = event.target.files[0];
             
-            // FIX: If files is empty (e.g., user opened and cancelled dialog), clear state
             if (!file) {
                 state.selectedFile = null;
                 state.fileName = '';
@@ -120,14 +136,13 @@
                     state.error = 'File size exceeds the 20MB limit. Please choose a smaller file.';
                     state.selectedFile = null;
                 } else {
-                    // CRITICAL: Update state here
                     state.selectedFile = file;
                     state.fileName = file.name;
                     state.error = null;
                 }
             }
             
-            // CRITICAL FIX: Force UI refresh to make the button appear
+            // CRITICAL FIX: Force UI refresh to make the button/file name appear
             renderApp(); 
         };
 
@@ -257,7 +272,6 @@
             if (fileInput) {
                 fileInput.onchange = handleFileChange;
                 // FIX: Clears the value when clicked, ensuring the 'change' event fires 
-                // even if the same file is selected again.
                 fileInput.addEventListener('click', () => { fileInput.value = null; });
             }
             
@@ -293,7 +307,7 @@
                     <div class="text-center">
                         <i data-lucide="loader" class="w-12 h-12 mx-auto text-primary animate-spin mb-2"></i>
                         <p class="font-semibold text-primary">Processing...</p>
-                        <p class="text-sm text-gray-500">Initializing Wasm worker (may take a moment on first run).</p>
+                        <p class="text-sm text-gray-500">Initializing Wasm worker (may take up to 30 seconds on first run).</p>
                     </div>
                  `;
             } else {
