@@ -54,22 +54,21 @@
 
             state.isProcessing = true;
             state.error = null;
-            renderApp(); // Rerender to show the "Processing..." state
+            renderApp(); // CRITICAL: Rerender to show the "Processing..." state
 
             try {
                 // 1. Create or load the Tesseract Worker
                 if (!state.tesseractWorker) {
                     
-                    // FIX: Using the traditional function syntax to resolve the DataCloneError
-                    const workerOptions = { 
-                        logger: function(m) { 
-                            if (m.status === 'recognizing') {
-                                console.log(`OCR Progress: ${(m.progress * 100).toFixed(0)}%`); 
-                            }
+                    // FIX: Create worker *without* the logger property to avoid the DataCloneError
+                    state.tesseractWorker = await Tesseract.createWorker();
+
+                    // Optional: Listen for messages on the worker directly (avoids cloning issues)
+                    state.tesseractWorker.onmessage = m => {
+                        if (m.data.status === 'recognizing') {
+                            console.log(`OCR Progress (Direct): ${(m.data.progress * 100).toFixed(0)}%`); 
                         }
                     };
-                    
-                    state.tesseractWorker = await Tesseract.createWorker(workerOptions);
 
                     await state.tesseractWorker.load();
                     await state.tesseractWorker.loadLanguage(DEFAULT_LANG);
