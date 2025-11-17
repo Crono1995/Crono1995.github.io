@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tesseract.js OCR - GitHub Pages</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/tesseract.js@5.0.3/dist/tesseract.min.js"></script>
+    <style>
+        /* Custom styles based on the original component, using standard hex codes */
+        .bg-gradient-hero { background-color: #f9fafb; }
+        .bg-gradient-primary { background: linear-gradient(90deg, #10b981, #059669); } 
+        .bg-gradient-clip {
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .text-primary { color: #059669; }
+        .bg-primary\/10 { background-color: rgba(5, 150, 105, 0.1); }
+        .border-primary\/20 { border-color: rgba(5, 150, 105, 0.2); }
+        .bg-card { background-color: white; }
+        .border-border { border-color: #e5e7eb; }
+        .variant-gradient {
+            background: linear-gradient(90deg, #10b981, #059669);
+            color: white;
+            border: none;
+        }
+    </style>
+</head>
+<body class="bg-gradient-hero min-h-screen text-gray-800">
+    <div id="app" class="container mx-auto px-6 py-12">
+        <div class="text-center p-20">Loading application...</div>
+    </div>
+
+    <script>
+        // --- Configuration ---
+        const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB limit
+        const DEFAULT_LANG = 'eng'; 
+
+        // --- State Management ---
+        let state = {
+            selectedFile: null,
+            isProcessing: false,
+            ocrResult: null,
+            fileName: '',
+            error: null,
+        };
+        
+        // --- Core OCR Logic (Tesseract.js) ---
+        const handleExtract = async () => {
+            if (!state.selectedFile || state.isProcessing) return;
+
+            state.isProcessing = true;
+            state.error = null;
+            // Rerender to show the "Processing..." state
+            renderApp(); 
+
+            try {
+                // Using the modern Tesseract.recognize() method for a single, reliable call.
+                const { data: { text } } = await Tesseract.recognize(
+                    state.selectedFile,
+                    DEFAULT_LANG,
+                    {
+                        // Safe logger function for progress tracking
+                        logger: m => {
+                            if (m.status === 'recognizing') {
+                                console.log(`OCR Progress: ${(m.progress * 100).toFixed(0)}%`); 
+                            }
+                        }
+                    }
+                );
+
+                const extractedText = text.trim();
+
+                if (!extractedText) {
+                    // This is the source of the error message you are seeing.
+                    throw new Error("Tesseract.js extracted no text. Check image quality.");
+                }
+
+                state.ocrResult = extractedText;
+
+            } catch (error) {
+                console.error("Tesseract.js OCR Error:", error);
+                
+                let userError = "OCR failed. This is often due to an **initial download failure** or a low-quality image.";
+                
+                if (error.message.includes("extracted no text")) {
+                     userError = "OCR failed. No legible text was found. Please ensure the image is high-quality and has clear contrast.";
+                } else if (error instanceof TypeError) {
+                    userError = "OCR failed due to an image decoding error. Ensure the image is a valid PNG, JPG, or WEBP file."
+                }
+                
+                state.error = userError;
+                state.ocrResult = null;
+            } finally {
+                state.isProcessing = false;
+                // Rerender to show result or error
+                renderApp(); 
+            }
+        };
+        
+        // --- Utility & Event Handlers ---
+
+        const preventDefaults = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+        };
+
+        const handleDrop = (e) => {
+            const file = e.dataTransfer.files[0];
+            if (file) {
+                const mockEvent = { target: { files: [file] } };
+                handleFileChange(mockEvent);
+            }
+        };
+
+        const handleFileChange = (event) => {
+            const file = event.target.files[0];
+            
+            if (!file) {
+                state.selectedFile = null;
+                state.fileName = '';
+                state.error = null;
+            } else {
+                if (file.size > MAX_FILE_SIZE) {
+                    state.error = 'File size exceeds the 20MB limit. Please choose a smaller file.';
+                    state.selectedFile = null;
+                } else {
+                    state.selectedFile = file;
+                    state.fileName = file.name;
+                    state.error = null;
+                }
+            }
+            
+            renderApp(); 
+        };
+
+        const handleReset = () => {
+            state.selectedFile = null;
+            state.ocrResult = null;
+            state.isProcessing = false;
+            state.fileName = '';
+            state.error = null;
+            renderApp();
+        };
+        
+        // --- HTML Rendering Functions ---
+
+        const renderApp = () => {
+            const app = document.getElementById('app');
+            app.innerHTML = ''; 
+
+            if (state.ocrResult) {
+                app.appendChild(OcrResult(state.ocrResult, state.fileName));
+            } else {
+                app.appendChild(MainScreen());
+            }
+            
+            lucide.createIcons();
+        };
+
+        const OcrResult = (text, fileName) => {
+            const div = document.createElement('div');
+            div.className = "py-12";
+            div.innerHTML = `
+                <div class="max-w-4xl mx-auto bg-card border border-border rounded-xl shadow-2xl p-8">
+                    <div class="flex items-center justify-between mb-6 border-b pb-4">
+                        <h2 class="text-2xl font-bold text-primary flex items-center">
+                            <i data-lucide="check-circle" class="w-6 h-6 mr-2"></i>
+                            OCR Complete
+                        </h2>
+                        <button id="resetButton" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition">
+                            Process Another
+                        </button>
+                    </div>
+                    <p class="text-sm text-gray-500 mb-4">
+                        Text extracted from: <span class="font-semibold">${fileName}</span>
+                    </p>
+                    <div class="bg-gray-50 border border-gray-200 p-6 rounded-lg whitespace-pre-wrap max-h-[500px] overflow-y-auto font-mono text-sm">
+                        ${text}
+                    </div>
+                    <button id="copyButton" class="mt-4 w-full px-4 py-3 variant-gradient rounded-lg hover:opacity-90 transition font-semibold text-lg">
+                        <i data-lucide="copy" class="w-5 h-5 mr-2 inline-block"></i>
+                        Copy Extracted Text
+                    </button>
+                </div>
+            `;
+            
+            div.querySelector('#resetButton').onclick = handleReset;
+            div.querySelector('#copyButton').onclick = () => {
+                navigator.clipboard.writeText(text);
+                alert('Text copied to clipboard!');
+            };
+            return div;
+        };
+
+        const MainScreen = () => {
+            const div = document.createElement('div');
+            div.innerHTML = `
+                <div class="text-center mb-12 space-y-4">
+                    <div class="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-full border border-primary/20">
+                        <i data-lucide="scan" class="w-5 h-5 text-primary"></i>
+                        <span class="text-sm font-medium text-primary">FREE In-Browser OCR</span>
+                    </div>
+                    <h1 class="text-5xl font-bold tracking-tight">
+                        Extract Text from Any
+                        <span class="block bg-gradient-primary bg-gradient-clip">
+                            Image or Document
+                        </span>
+                    </h1>
+                    <p class="text-xl text-gray-500 max-w-2xl mx-auto">
+                        100% free OCR running directly in your browser using the Tesseract.js library. No API key needed.
+                    </p>
+                    ${state.error ? `<div class="mt-4 p-4 bg-red-100 text-red-700 border border-red-200 rounded-lg max-w-lg mx-auto font-medium">${state.error}</div>` : ''}
+                </div>
+
+                <div class="grid md:grid-cols-3 gap-6 mb-12 max-w-4xl mx-auto">
+                    ${[
+                        { title: '100% Free', desc: 'No limits, no costs, runs entirely in-browser.' },
+                        { title: 'Pure JavaScript', desc: 'Uses WebAssembly (Wasm) for local processing.' },
+                        { title: 'Privacy Focused', desc: 'Your image never leaves your computer.' },
+                    ].map((feature, i) => `
+                        <div class="bg-card border border-border rounded-lg p-6 hover:border-primary/50 transition-all hover:shadow-lg" key="${i}">
+                            <h3 class="font-semibold mb-2">${feature.title}</h3>
+                            <p class="text-sm text-gray-500">${feature.desc}</p>
+                        </div>
+                    `).join('')}
+                </div>
+
+                <div class="max-w-2xl mx-auto">
+                    <label id="dropArea" class="block w-full cursor-pointer rounded-xl border-2 border-dashed border-gray-300 p-12 text-center transition-all hover:border-primary/50 bg-white shadow-lg">
+                        <input id="fileInput" type="file" class="sr-only" accept="image/jpeg,image/png,image/webp">
+                        ${FileUploaderContent()}
+                    </label>
+                </div>
+
+                ${state.selectedFile && !state.isProcessing ? `
+                    <div class="flex justify-center mt-6">
+                        <button id="extractButton" class="px-10 py-3 variant-gradient rounded-full shadow-xl hover:shadow-2xl transition-all text-lg font-semibold">
+                            <i data-lucide="scan" class="w-5 h-5 mr-2 inline-block"></i>
+                            Extract Text
+                        </button>
+                    </div>
+                ` : ''}
+
+                <div class="mt-16 text-center">
+                    <div class="inline-flex flex-col gap-2 p-6 bg-card border border-border rounded-lg">
+                        <p class="text-sm text-gray-500">
+                            🚀 Powered by <span class="text-primary font-semibold">Tesseract.js</span>
+                        </p>
+                        <p class="text-xs text-gray-500">
+                            The industry-standard open-source OCR engine.
+                        </p>
+                    </div>
+                </div>
+            `;
+            
+            // Event listeners
+            const fileInput = div.querySelector('#fileInput');
+            if (fileInput) {
+                fileInput.onchange = handleFileChange;
+                fileInput.addEventListener('click', () => { fileInput.value = null; });
+            }
+            
+            const dropArea = div.querySelector('#dropArea');
+            if (dropArea) {
+                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                    dropArea.addEventListener(eventName, preventDefaults, false);
+                });
+                dropArea.addEventListener('drop', handleDrop, false);
+            }
+
+            const clearFileButton = div.querySelector('#clearFile');
+            if (clearFileButton) clearFileButton.onclick = handleReset;
+
+            return div;
+        };
+        
+        const FileUploaderContent = () => {
+            if (state.selectedFile) {
+                return `
+                    <div class="text-center">
+                        <i data-lucide="file-check" class="w-12 h-12 mx-auto text-green-500 mb-2"></i>
+                        <p class="font-semibold">${state.selectedFile.name}</p>
+                        <p class="text-sm text-gray-500">Ready to process.</p>
+                        <button type="button" id="clearFile" class="mt-2 text-red-500 text-sm hover:underline">Clear File</button>
+                    </div>
+                `;
+            } else if (state.isProcessing) {
+                 return `
+                    <div class="text-center">
+                        <i data-lucide="loader" class="w-12 h-12 mx-auto text-primary animate-spin mb-2"></i>
+                        <p class="font-semibold text-primary">Processing...</p>
+                        <p class="text-sm text-gray-500">Downloading language data and running OCR.</p>
+                    </div>
+                 `;
+            } else {
+                 return `
+                    <i data-lucide="file-up" class="w-12 h-12 mx-auto text-gray-400 mb-3"></i>
+                    <p class="mb-2 font-semibold">Drag & drop an image here, or <span class="text-primary hover:text-indigo-600 transition cursor-pointer">browse</span></p>
+                    <p class="text-xs text-gray-500">Max size 20MB. Note: Accuracy depends heavily on image quality!</p>
+                 `;
+            }
+        };
+
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', renderApp);
+        
+        // CRITICAL FIX: Event Delegation for the Extract Button
+        document.addEventListener('click', (event) => {
+            if (event.target.id === 'extractButton' || event.target.closest('#extractButton')) {
+                event.preventDefault(); 
+                handleExtract();
+            }
+        });
+    </script>
+</body>
+</html>
