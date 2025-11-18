@@ -33,18 +33,10 @@
         const ReactDOM = window.ReactDOM;
         const THREE = window.THREE;
         
-        // --- FIX APPLIED HERE ---
         // Access OrbitControls robustly. 
-        // 1. Try THREE.OrbitControls (ideal UMD export)
-        // 2. Fall back to window.OrbitControls (common legacy global export)
         const OrbitControls = window.THREE.OrbitControls || window.OrbitControls;
         
-        if (typeof OrbitControls === 'undefined') {
-            console.error("Fatal Error: OrbitControls failed to load. 3D Viewer will not function.");
-            // Prevent further execution by throwing an error or rendering a fallback UI
-        }
-        
-        // Icon setup from the previous fix remains (using lucide core library)
+        // Icon setup (using lucide core library)
         const createIcon = (IconFunction) => ({ className, ...props }) => (
             <span 
                 className={className} 
@@ -318,7 +310,6 @@
         };
 
         const Viewer3D = ({ mesh }) => {
-            // Check if controls are available before trying to use them
             if (typeof OrbitControls === 'undefined') {
                 return (
                     <div className="border border-red-400 rounded-lg bg-red-50 dark:bg-red-900 flex items-center justify-center h-[300px] lg:h-[400px] relative">
@@ -365,7 +356,7 @@
                 rendererRef.current = renderer;
 
                 scene.add(new THREE.AmbientLight(0x404040, 5));
-                const directionalLight = new THREE.DirectionalLight(0xffffff, 3);
+                const directionalLight = new THREE.DirectionionalLight(0xffffff, 3);
                 directionalLight.position.set(1, 1, 1).normalize();
                 scene.add(directionalLight);
 
@@ -401,8 +392,11 @@
                 if (meshObjectRef.current) {
                     scene.remove(meshObjectRef.current);
                     meshObjectRef.current.geometry.dispose();
-                    if (Array.isArray(meshObjectRef.current.material)) meshObjectOfRef.current.material.forEach(m => m.dispose());
+                    
+                    // FIX: Corrected typo (meshObjectOfRef -> meshObjectRef)
+                    if (Array.isArray(meshObjectRef.current.material)) meshObjectRef.current.material.forEach(m => m.dispose());
                     else meshObjectRef.current.material.dispose();
+                    
                     meshObjectRef.current = null;
                 }
 
