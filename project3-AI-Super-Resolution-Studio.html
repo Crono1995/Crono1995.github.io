@@ -84,17 +84,21 @@
                             </label>
                         </div>
 
-                        <div class="space-y-2">
-                            <label for="model-select" class="text-sm font-medium">Select Model/Scale</label>
-                            <select id="model-select" class="w-full p-2 rounded-lg bg-card border border-border">
-                                <option value="bicubic-x2">Bicubic (2x)</option>
-                                <option value="bicubic-x4">Bicubic (4x)</option>
-                                <option value="lanczos-x2">Lanczos (2x)</option>
-                                <option value="lanczos-x4" selected>Lanczos (4x)</option>
-                                <option value="real-esrgan-x2">Real-ESRGAN (2x)</option>
-                                <option value="real-esrgan-x4">Real-ESRGAN (4x)</option>
-                            </select>
-                        </div>
+						<div class="space-y-2">
+							<label for="model-select" class="text-sm font-medium">Select Model/Scale</label>
+							<select id="model-select" class="w-full p-2 rounded-lg bg-card border border-border">
+								<option value="lanczos-x4" selected>Lanczos (4x) - High-Quality General Upscale</option>
+								<option value="lanczos-x2">Lanczos (2x) - Balanced Upscale, less resource intensive</option>
+								<option value="bicubic-x4">Bicubic (4x) - Standard, smooth, fast upscaling</option>
+								<option value="bicubic-x2">Bicubic (2x) - Fastest, lowest quality option</option>
+								
+								<option value="real-esrgan-x4" disabled>Real-ESRGAN (4x) - Recommended for Photos/Complex Textures (Simulated)</option>
+								<option value="real-esrgan-x2" disabled>Real-ESRGAN (2x) - Recommended for Photos/Complex Textures (Simulated)</option>
+							</select>
+							<p class="text-xs text-muted-foreground pt-1">
+								**Lanczos** offers better detail preservation than Bicubic. The **Real-ESRGAN** options are **simulated** using canvas resizing, as the real AI model is not included in this single-file deployment.
+							</p>
+						</div>
 
                         <div class="space-y-3">
                             <button id="process-btn" class="w-full btn-primary h-10 px-4 py-2 inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors disabled:opacity-50" disabled>
