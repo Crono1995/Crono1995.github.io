@@ -202,16 +202,16 @@
         class DepthEstimator {
             constructor() {
                 this.model = null;
-                // MiDaS Large model input size
-                this.inputSize = 384; 
+                // MiDaS Small model input size
+                this.inputSize = 256; 
             }
 
             async loadModel() {
                 if (!this.model) {
                     showToast({ title: "Loading AI Model", description: "Downloading depth estimation model (This may take a moment)..." });
                     
-                    // FIX: Using a stable, versioned model hosted on GitHub CDN to resolve the 404 error
-                    const MODEL_URL = 'https://cdn.jsdelivr.net/gh/tensorflow/tfjs-models@master/midas/large/model.json';
+                    // FIX: Using the highly reliable TensorFlow Hub URL for MiDaS Small.
+                    const MODEL_URL = 'https://tfhub.dev/intel/midas/v2/2d/small/1?tfjs-format=tfjs_graph_model';
                     
                     this.model = await tf.loadGraphModel(MODEL_URL);
 
@@ -390,7 +390,7 @@
         function init3DViewer() {
             if (scene) return; 
 
-            // THREE is guaranteed to be defined as scripts are loaded synchronously
+            // THREE is guaranteed to be defined because scripts are loaded synchronously in the head
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0xf0f0f0); 
 
@@ -542,11 +542,12 @@
         });
         
         // --- Initialization on load ---
-        // Final Fix: Run initialization immediately at the end of the body
-        (function() {
+        // Final Fix: Use DOMContentLoaded to ensure the elements are available, 
+        // relying on synchronous loading in the head to guarantee THREE is defined.
+        document.addEventListener('DOMContentLoaded', () => {
             init3DViewer(); 
             lucide.createIcons(); 
-        })();
+        });
 
     </script>
 </body>
