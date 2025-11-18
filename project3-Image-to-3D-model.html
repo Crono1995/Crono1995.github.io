@@ -6,9 +6,10 @@
     <title>AI 3D Model Generator - GitHub.io</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.17.0/dist/tf.min.js"></script>
-    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.165.0/three.min.js"></script>
-    <script defer src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.17.0/dist/tf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.165.0/three.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.165.0/examples/js/controls/OrbitControls.js"></script>
     
     <style>
         /* Custom styles */
@@ -144,8 +145,6 @@
         </div>
     </div>
     
-    <script defer src="https://cdn.jsdelivr.net/npm/three@0.165.0/examples/js/controls/OrbitControls.js"></script>
-
     <script>
         // --- GLOBAL STATE ---
         let selectedImageBase64 = null;
@@ -199,20 +198,20 @@
             }
         });
 
-        // --- 2. DEPTH ESTIMATION CLASS (Fixed Model Source) ---
+        // --- 2. DEPTH ESTIMATION CLASS (Final Model Source Fix) ---
         class DepthEstimator {
             constructor() {
                 this.model = null;
-                // Changed input size back to MiDaS v2_lite default
-                this.inputSize = 256; 
+                // MiDaS Large model input size
+                this.inputSize = 384; 
             }
 
             async loadModel() {
                 if (!this.model) {
                     showToast({ title: "Loading AI Model", description: "Downloading depth estimation model (This may take a moment)..." });
                     
-                    // FIX: Use a stable, non-TFHub URL for MiDaS v2_lite model weights
-                    const MODEL_URL = 'https://storage.googleapis.com/tfjs-models/demos/midas/model.json';
+                    // FIX: Using the MiDaS Large public model URL which is currently stable
+                    const MODEL_URL = 'https://storage.googleapis.com/tfjs-models/demos/midas/large/model.json';
                     
                     this.model = await tf.loadGraphModel(MODEL_URL);
 
@@ -391,7 +390,7 @@
         function init3DViewer() {
             if (scene) return; 
 
-            // FIX: THREE is now guaranteed to be defined here due to window.onload handler
+            // THREE is guaranteed to be defined because scripts are loaded synchronously in the head
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0xf0f0f0); 
 
@@ -543,7 +542,7 @@
         });
         
         // --- Initialization on load ---
-        // FIX: Using window.onload ensures ALL deferred scripts (Three.js, OrbitControls, Lucide) have loaded and executed.
+        // window.onload is used to ensure the entire page (including all elements and synchronously loaded scripts) is ready.
         window.onload = () => {
             init3DViewer(); 
             lucide.createIcons(); 
