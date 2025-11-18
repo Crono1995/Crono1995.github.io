@@ -282,8 +282,8 @@
                 if (!this.model) {
                     showToast({ title: "Loading AI Model", description: "Downloading depth estimation model (This may take a moment)..." });
                     
-                    // Fixed URL for the MiDaS model
-                    const MODEL_URL = 'https://storage.googleapis.com/tfjs-models/demos/midas/model.json';
+                    // FINAL FIX: Corrected URL to the actual nested path for the small MiDaS model
+                    const MODEL_URL = 'https://storage.googleapis.com/tfjs-models/demos/midas/depth_v21_small_256_float16_tfjs/model.json';
                     
                     try {
                         this.model = await tf.loadGraphModel(MODEL_URL, { 
@@ -291,7 +291,7 @@
                             onProgress: (fraction) => {
                                 updateModelProgress(fraction);
                             },
-                            // CRITICAL FIX: Explicitly set credentials to omit to prevent download stalling
+                            // Preserve fix for stalled download issues
                             credentials: 'omit'
                         });
                         showToast({ title: "Model Ready", description: "AI model loaded successfully.", variant: 'success' });
