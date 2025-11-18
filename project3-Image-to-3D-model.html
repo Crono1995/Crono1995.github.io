@@ -14,6 +14,7 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     
     <style>
+        /* ... (Styling is the same) ... */
         .text-gradient {
             background-image: linear-gradient(45deg, #10b981, #3b82f6);
             -webkit-background-clip: text;
@@ -208,7 +209,6 @@
         function startViewerLoading() {
             viewerLoadingBar.classList.remove('hidden');
             viewerPlaceholder.classList.add('hidden');
-            // Re-create icons to ensure the spinner is visible
             lucide.createIcons(); 
         }
 
@@ -271,7 +271,6 @@
                     return this.fallbackDepthEstimation(image);
                 }
 
-                // Standard depth estimation logic... (omitted for brevity, assume correct)
                 const tfImage = tf.browser.fromPixels(image);
                 const resizedImage = tf.image.resizeBilinear(tfImage, [this.inputSize, this.inputSize]);
                 const normalized = resizedImage.div(255.0);
@@ -306,7 +305,6 @@
             }
 
             fallbackDepthEstimation(image) {
-                // Fallback logic... (omitted for brevity, assume correct)
                 const canvas = document.createElement('canvas');
                 canvas.width = image.width;
                 canvas.height = image.height;
@@ -364,7 +362,13 @@
                 }
                 const { data, width, height } = imageData;
                 
-                // ADDED ROBUSTNESS CHECK
+                const MAX_PIXELS = 1024 * 1024; // Limit to 1,048,576 pixels (e.g., 1024x1024)
+                
+                if (width * height > MAX_PIXELS) {
+                     // NEW: Throw error on large input to prevent hang
+                    throw new Error(`Input depth map too large (${width}x${height}). Max supported size for 3D generation is ~1024x1024.`);
+                }
+                
                 if (width <= 1 || height <= 1 || data.length === 0) {
                     console.error("Invalid image data dimensions for mesh generation.");
                     return null;
@@ -384,7 +388,6 @@
                         const i = (y * width + x) * 4;
                         const normalizedDepth = data[i] / 255.0; 
                         
-                        // Center the coordinates
                         const vx = (x / (width - 1) - 0.5) * aspectRatio; 
                         const vy = (0.5 - y / (height - 1)); 
                         const vz = normalizedDepth * depthScale; 
@@ -394,7 +397,6 @@
                     }
                 }
 
-                // Create faces (two triangles per quad)
                 for (let y = 0; y < height - 1; y++) {
                     for (let x = 0; x < width - 1; x++) {
                         const i = y * width + x;
@@ -416,7 +418,7 @@
             }
 
             exportToOBJ(geometry) {
-                // OBJ export logic... (omitted for brevity, assume correct)
+                // ... (omitted for brevity)
                 const vertices = geometry.getAttribute('position').array;
                 const indices = geometry.getIndex().array;
                 let obj = '# OBJ file generated from Depth Map\n';
@@ -435,7 +437,7 @@
             }
 
             downloadOBJ(content) {
-                // Download logic... (omitted for brevity, assume correct)
+                // ... (omitted for brevity)
                 const blob = new Blob([content], { type: 'text/plain' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
@@ -507,20 +509,26 @@
             if (meshObject) {
                 scene.remove(meshObject);
                 meshObject.geometry.dispose();
-                meshObject.material.dispose();
+                // Check if material is an array (multi-material), though not expected here
+                if (Array.isArray(meshObject.material)) {
+                    meshObject.material.forEach(m => m.dispose());
+                } else {
+                    meshObject.material.dispose();
+                }
                 meshObject = null;
             }
-            stopViewerLoading(); // Hide loading bar
-            viewerPlaceholder.classList.remove('hidden'); // Show static placeholder
+            stopViewerLoading(); 
+            viewerPlaceholder.classList.remove('hidden'); 
         }
 
         function displayMesh(geometry, textureImage) {
-            clear3DViewer();
+            // Note: clear3DViewer is called immediately before this function executes in the button handler
+            // We only need to manage the loading state here.
             
             // Start the loading state while the texture loads asynchronously
             startViewerLoading(); 
 
-            // Create material and mesh immediately, but assign texture in callback
+            // Create material and mesh immediately, map texture will be applied in callback
             const material = new THREE.MeshLambertMaterial({ 
                 side: THREE.DoubleSide,
             });
@@ -543,16 +551,15 @@
             const fitFactor = 2; 
             const newDistance = maxDim * fitFactor;
             
-            // Reset camera to view the new model
             camera.position.set(0, 0, newDistance); 
             
             camera.updateProjectionMatrix();
             if (controls) controls.update();
 
             // --- TEXTURE LOADING (ASYNCHRONOUS) ---
-            const texture = new THREE.TextureLoader().load(textureImage.src, 
-                // SUCCESS CALLBACK: Texture loaded
-                () => {
+            new THREE.TextureLoader().load(textureImage.src, 
+                // SUCCESS CALLBACK
+                (texture) => {
                     meshObject.material.map = texture;
                     meshObject.material.needsUpdate = true;
                     stopViewerLoading(); 
@@ -560,12 +567,11 @@
                     exportButton.disabled = false;
                 },
                 undefined, // Progress callback
-                // ERROR CALLBACK: Texture failed to load
+                // ERROR CALLBACK
                 (error) => {
                     console.error('Texture loading error:', error);
-                    stopViewerLoading(); // Hide loading bar on error
+                    stopViewerLoading(); 
                     showToast({ title: "Texture Error", description: "Failed to load image texture. Displaying untextured mesh.", variant: 'info' });
-                    // Keep the untextured mesh visible as a fallback
                     exportButton.disabled = false;
                 }
             );
@@ -588,34 +594,43 @@
                 const img = new Image();
                 img.src = selectedImageBase64;
                 await new Promise((resolve) => { img.onload = resolve; });
-
+                
+                // 1. DEPTH ESTIMATION
                 showToast({ title: "Processing image", description: "Estimating depth map..." });
                 const estimatedDepth = await depthEstimator.estimateDepth(img);
                 depthMapImageData = estimatedDepth;
                 displayDepthMap(estimatedDepth);
 
+                // 2. MESH GENERATION START
                 showToast({ title: "Generating 3D model", description: "Creating mesh from depth data..." });
                 
-                // CRITICAL FIX: Ensure THREE.js is ready before calling mesh generation
                 await waitForLibrary('THREE'); 
-
-                const generated = meshGenerator.generateMeshFromDepth(estimatedDepth);
-                if (!generated) throw new Error("Mesh generation failed. Check image data or console for details.");
-
-                generatedMesh = generated;
-                displayMesh(generated, img); // displayMesh manages its own loading state
                 
-                // Note: Success toast and export button enabling now happen in the displayMesh texture callback
+                // NEW: Wrap synchronous call in try/catch to ensure errors are caught immediately
+                let generated;
+                try {
+                    generated = meshGenerator.generateMeshFromDepth(estimatedDepth);
+                    if (!generated) throw new Error("Mesh object was null after generation.");
+                } catch (meshError) {
+                    // Propagate the specific synchronous error
+                    throw new Error(`Mesh generation failed during calculation: ${meshError.message}`); 
+                }
+                
+                generatedMesh = generated;
+                // 3. DISPLAY & TEXTURE LOADING (ASYNCHRONOUS)
+                displayMesh(generated, img); 
 
             } catch (error) {
                 console.error('Generation error:', error);
-                stopViewerLoading(); // Ensure loading bar is hidden if a preceding step fails
+                // Ensure all loading states are halted on error
+                stopViewerLoading(); 
                 showToast({ 
                     title: "Generation failed", 
                     description: error.message || "An unknown error occurred. Check browser console.", 
                     variant: 'destructive' 
                 });
             } finally {
+                // Ensure button state is reset
                 isProcessing = false;
                 generateButton.disabled = !selectedImageBase64; 
                 generateButton.innerHTML = `<i data-lucide="box" class="w-5 h-5 mr-2"></i> <span id="generate-text">Generate 3D Model</span>`;
@@ -624,6 +639,7 @@
         });
 
         exportButton.addEventListener('click', () => {
+            // ... (Export logic is the same) ...
             if (!generatedMesh) {
                 showToast({ title: "No model to export", description: "Please generate a 3D model first", variant: 'destructive' });
                 return;
