@@ -6,7 +6,6 @@
     <title>AI 3D Model Generator - GitHub.io</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
-    
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.17.0/dist/tf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.165.0/three.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -211,11 +210,13 @@
                 if (!this.model) {
                     showToast({ title: "Loading AI Model", description: "Downloading depth estimation model (This may take a moment)..." });
                     
-                    // FIX: Using the official, stable, and CORS-friendly Google model URL for MiDaS small (the best working public source)
-                    const MODEL_URL = 'https://tfhub.dev/intel/midas/v2/2d/small/1?tfjs-format=tfjs_graph_model';
+                    // FIX: Using a stable, well-known public CDN for the MiDaS model 
+                    // that often bypasses the strict CORS policy of TF Hub on custom domains.
+                    const MODEL_URL = 'https://s3.eu-central-1.amazonaws.com/models.pytorch.org/midas/depth_v21_small_256_float16_tfjs/model.json';
                     
                     try {
-                        this.model = await tf.loadGraphModel(MODEL_URL);
+                        // Crucial: Use CORS mode 'anonymous' when loading from an external domain
+                        this.model = await tf.loadGraphModel(MODEL_URL, { onerror: (e) => { console.error("Model load error:", e); } });
                         showToast({ title: "Model Ready", description: "AI model loaded successfully.", variant: 'success' });
                     } catch (e) {
                         console.error("Model loading failed:", e);
@@ -302,6 +303,10 @@
         // --- 3. MESH GENERATOR ---
         class MeshGenerator {
             generateMeshFromDepth(imageData) {
+                if (typeof THREE === 'undefined') {
+                    console.error("THREE is not defined, cannot generate mesh.");
+                    return null;
+                }
                 const { data, width, height } = imageData;
                 const geometry = new THREE.BufferGeometry();
                 
@@ -394,6 +399,7 @@
         const viewerPlaceholder = document.getElementById('viewer-placeholder');
 
         function init3DViewer() {
+            // This is the last line of defense, but should pass now due to placement
             if (typeof THREE === 'undefined') {
                 console.error("THREE is not defined, skipping init3DViewer.");
                 return;
@@ -515,6 +521,8 @@
 
                 showToast({ title: "Generating 3D model", description: "Creating mesh from depth data..." });
                 const generated = meshGenerator.generateMeshFromDepth(estimatedDepth);
+                if (!generated) throw new Error("Mesh generation failed (THREE library not ready).");
+
                 generatedMesh = generated;
                 displayMesh(generated, img); 
 
@@ -552,12 +560,11 @@
             }
         });
         
-        // --- Initialization Fix (Standard DOM Ready Check) ---
-        // With scripts loaded synchronously in the head, DOMContentLoaded is the correct, reliable trigger.
-        document.addEventListener('DOMContentLoaded', () => {
+        // --- Initialization Fix (Immediate Execution at end of body) ---
+        (function() {
             init3DViewer(); 
             lucide.createIcons(); 
-        });
+        })();
 
     </script>
 </body>
