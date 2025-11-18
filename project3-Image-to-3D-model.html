@@ -96,6 +96,17 @@
                             <canvas id="depth-map-canvas" class="hidden max-w-full max-h-full"></canvas>
                         </div>
                     </div>
+                    
+                    <div id="model-loading-container" class="space-y-2 pt-6 hidden">
+                        <h3 class="text-sm font-medium text-gray-700 flex items-center gap-2">
+                            <i data-lucide="download-cloud" class="w-4 h-4 text-[#3b82f6]"></i>
+                            Loading AI Model Progress:
+                            <span id="model-progress-text" class="font-bold">0%</span>
+                        </h3>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5">
+                            <div id="model-progress-bar" class="bg-[#3b82f6] h-2.5 rounded-full transition-all duration-100" style="width: 0%"></div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="card p-6 space-y-6">
@@ -170,6 +181,12 @@
         const viewerContainer = document.getElementById('threejs-container');
         const viewerPlaceholder = document.getElementById('viewer-placeholder');
         const viewerLoadingBar = document.getElementById('viewer-loading-bar');
+        
+        // PROGRESS BAR ELEMENTS
+        const modelLoadingContainer = document.getElementById('model-loading-container');
+        const modelProgressBar = document.getElementById('model-progress-bar');
+        const modelProgressText = document.getElementById('model-progress-text');
+
 
         // --- UTILITY FUNCTIONS ---
 
@@ -184,6 +201,21 @@
                 };
                 check();
             });
+        }
+        
+        function updateModelProgress(fraction) {
+            const percentage = Math.round(fraction * 100);
+            modelProgressBar.style.width = `${percentage}%`;
+            modelProgressText.textContent = `${percentage}%`;
+            
+            if (percentage < 100) {
+                modelLoadingContainer.classList.remove('hidden');
+            } else {
+                // Hide container slightly later after model load is complete
+                setTimeout(() => {
+                    modelLoadingContainer.classList.add('hidden');
+                }, 500); 
+            }
         }
 
         // --- TOAST NOTIFICATION SYSTEM ---
@@ -250,28 +282,39 @@
                 if (!this.model) {
                     showToast({ title: "Loading AI Model", description: "Downloading depth estimation model (This may take a moment)..." });
                     
-                    // CRITICAL FIX: Changed from S3 (CORS blocked) to Google Storage (CORS-friendly)
-                    const MODEL_URL = 'https://storage.googleapis.com/tfjs-models/demos/midas/midas_small_256_256_tfjs/model.json';
+                    // FIXED 404 URL: This is the correct path for the MiDaS model
+                    const MODEL_URL = 'https://storage.googleapis.com/tfjs-models/demos/midas/model.json';
                     
                     try {
-                        // Use the new, CORS-friendly URL
-                        this.model = await tf.loadGraphModel(MODEL_URL, { onerror: (e) => { console.error("Model load error:", e); } });
+                        this.model = await tf.loadGraphModel(MODEL_URL, { 
+                            onerror: (e) => { console.error("Model load error:", e); },
+                            // ADDED PROGRESS TRACKING
+                            onProgress: (fraction) => {
+                                updateModelProgress(fraction);
+                            }
+                        });
                         showToast({ title: "Model Ready", description: "AI model loaded successfully.", variant: 'success' });
                     } catch (e) {
                         console.error("Model loading failed:", e);
                         this.model = 'fallback';
-                        showToast({ title: "Using Fallback", description: "Main AI model failed or blocked by CORS. Using alternative depth estimation method.", variant: 'info' });
+                        showToast({ title: "Using Fallback", description: `Model failed to load. Reason: ${e.message}. Using alternative method.`, variant: 'info' });
                     }
                 }
             }
 
             async estimateDepth(image) {
                 await this.loadModel();
+                
+                // Ensure progress bar is hidden if model was loaded on a previous run
+                if (this.model !== 'fallback') {
+                    updateModelProgress(1.0); 
+                }
 
                 if (this.model === 'fallback') {
                     return this.fallbackDepthEstimation(image);
                 }
-
+                
+                // ... (Depth estimation logic using TensorFlow.js) ...
                 const tfImage = tf.browser.fromPixels(image);
                 const resizedImage = tf.image.resizeBilinear(tfImage, [this.inputSize, this.inputSize]);
                 const normalized = resizedImage.div(255.0);
@@ -306,6 +349,7 @@
             }
 
             fallbackDepthEstimation(image) {
+                // ... (Fallback logic is unchanged) ...
                 const canvas = document.createElement('canvas');
                 canvas.width = image.width;
                 canvas.height = image.height;
@@ -340,6 +384,7 @@
             depthMapPlaceholder.classList.remove('hidden');
             depthMapCanvas.width = 0;
             depthMapCanvas.height = 0;
+            updateModelProgress(0); // Reset progress bar on clear
         }
 
         function displayDepthMap(imageData) {
@@ -521,7 +566,6 @@
         function displayMesh(geometry, textureImage) {
             startViewerLoading(); 
 
-            // Create material and mesh immediately, map texture will be applied in callback
             const material = new THREE.MeshLambertMaterial({ 
                 side: THREE.DoubleSide,
             });
@@ -559,7 +603,7 @@
                     showToast({ title: "3D Model Ready", description: "Use your mouse to rotate the model.", variant: 'success' });
                     exportButton.disabled = false;
                 },
-                undefined, // Progress callback
+                undefined, // Progress callback (not used for texture load)
                 // ERROR CALLBACK
                 (error) => {
                     console.error('Texture loading error:', error);
@@ -589,10 +633,15 @@
                 await new Promise((resolve) => { img.onload = resolve; });
                 
                 // 1. DEPTH ESTIMATION
-                showToast({ title: "Processing image", description: "Estimating depth map..." });
+                showToast({ title: "Processing image", description: "Estimating depth map and loading model..." });
                 const estimatedDepth = await depthEstimator.estimateDepth(img);
                 depthMapImageData = estimatedDepth;
                 displayDepthMap(estimatedDepth);
+                
+                // Ensure model bar is hidden if model was loaded or fallback was used
+                if (depthEstimator.model !== 'fallback') {
+                    updateModelProgress(1.0); 
+                }
 
                 // 2. MESH GENERATION START
                 showToast({ title: "Generating 3D model", description: "Creating mesh from depth data..." });
@@ -613,7 +662,9 @@
 
             } catch (error) {
                 console.error('Generation error:', error);
+                // Ensure all loading states are halted on error
                 stopViewerLoading(); 
+                updateModelProgress(0); // Also reset progress bar on fatal error
                 showToast({ 
                     title: "Generation failed", 
                     description: error.message || "An unknown error occurred. Check browser console.", 
