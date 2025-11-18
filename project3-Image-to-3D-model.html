@@ -282,16 +282,17 @@
                 if (!this.model) {
                     showToast({ title: "Loading AI Model", description: "Downloading depth estimation model (This may take a moment)..." });
                     
-                    // FIXED 404 URL: This is the correct path for the MiDaS model
+                    // Fixed URL for the MiDaS model
                     const MODEL_URL = 'https://storage.googleapis.com/tfjs-models/demos/midas/model.json';
                     
                     try {
                         this.model = await tf.loadGraphModel(MODEL_URL, { 
                             onerror: (e) => { console.error("Model load error:", e); },
-                            // ADDED PROGRESS TRACKING
                             onProgress: (fraction) => {
                                 updateModelProgress(fraction);
-                            }
+                            },
+                            // CRITICAL FIX: Explicitly set credentials to omit to prevent download stalling
+                            credentials: 'omit'
                         });
                         showToast({ title: "Model Ready", description: "AI model loaded successfully.", variant: 'success' });
                     } catch (e) {
@@ -662,7 +663,6 @@
 
             } catch (error) {
                 console.error('Generation error:', error);
-                // Ensure all loading states are halted on error
                 stopViewerLoading(); 
                 updateModelProgress(0); // Also reset progress bar on fatal error
                 showToast({ 
