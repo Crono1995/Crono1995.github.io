@@ -6,10 +6,10 @@
     <title>AI 3D Model Generator (Client-Side)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Custom styles to mimic the original app's look */
-        .bg-background { background-color: #0d1117; } /* Dark background */
-        .card { background-color: #161b22; border-color: #30363d; } /* Dark card background */
-        .text-primary { color: #58a6ff; } /* Blue primary color */
+        /* Custom styles remain unchanged */
+        .bg-background { background-color: #0d1117; } 
+        .card { background-color: #161b22; border-color: #30363d; } 
+        .text-primary { color: #58a6ff; } 
         .gradient-primary { background: linear-gradient(to right, #58a6ff, #89c4f4); color: white; }
         .text-gradient { background: linear-gradient(45deg, #58a6ff, #89c4f4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .text-muted-foreground { color: #8b949e; }
@@ -18,12 +18,10 @@
         #loading-spinner { border-width: 4px; border-style: solid; border-color: rgba(255, 255, 255, 0.3); border-top-color: #58a6ff; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.17.0/dist/tf.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@pixiu-tech/tfjs-midas@1.0.0/dist/midas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body class="bg-background text-white min-h-screen">
     <div class="py-8 px-4 max-w-7xl mx-auto">
+        
         <div class="text-center mb-12">
             <div class="flex items-center justify-center gap-3 mb-4">
                 <div class="w-10 h-10 text-primary border-2 border-primary flex items-center justify-center">📦</div>
@@ -46,7 +44,6 @@
                         <img id="image-preview" src="" alt="Selected Image" class="hidden max-h-full max-w-full object-contain mt-2 rounded-lg">
                     </div>
                 </div>
-
                 <div>
                     <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
                         <span class="text-primary">2.</span> Depth Map
@@ -63,16 +60,14 @@
                         <span class="text-primary">3.</span> 3D Model Viewer
                     </h2>
                     <div id="viewer3d-container">
-                        </div>
+                    </div>
                 </div>
-
                 <div class="space-y-3">
                     <button id="generate-btn" onclick="handleGenerate()" disabled
                         class="w-full h-12 text-base transition-opacity rounded-lg disabled:opacity-50 flex items-center justify-center font-semibold gradient-primary hover:opacity-90">
                         <div id="loading-spinner" class="hidden mr-2"></div>
-                        <span id="generate-text">📦 Generate 3D Model</span>
+                        <span id="generate-text">Waiting for AI Libraries...</span>
                     </button>
-
                     <button id="export-btn" onclick="handleExport()" disabled
                         class="w-full h-12 text-base rounded-lg border border-primary/30 hover:bg-primary/10 transition-colors bg-transparent text-white font-semibold flex items-center justify-center disabled:opacity-50">
                         <span class="mr-2">⬇️</span> Download OBJ
@@ -103,22 +98,27 @@
         </div>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.17.0/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@pixiu-tech/tfjs-midas@1.0.0/dist/midas.min.js"></script>
+    
     <script>
         // Global variables for application state
         let selectedImageBase64 = null;
         let currentMesh = null;
         let isProcessing = false;
         let depthModel = null; // MiDaS model instance
+        let isAiReady = false; // NEW STATE FLAG
+        let initialLoadAttempt = false; // NEW FLAG for error logging
 
         // --- Utility Functions (Toast, 3D Viewer Setup) ---
 
-        /** Simple Toast/Notification function (replaces useToast hook) */
+        /** Simple Toast/Notification function */
         function showToast(title, description, isDestructive = false) {
             console.log(`[Toast] ${title}: ${description}`);
             const toastElement = document.createElement('div');
-            // FIX: Ensure no unexpected tokens in template literal
-            toastElement.className = \`fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 text-white \${isDestructive ? 'bg-red-600' : 'bg-green-600'}\`;
-            toastElement.innerHTML = \`<strong>\${title}</strong>: \${description}\`;
+            toastElement.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 text-white ${isDestructive ? 'bg-red-600' : 'bg-green-600'}`;
+            toastElement.innerHTML = `<strong>${title}</strong>: ${description}`;
             document.body.appendChild(toastElement);
 
             setTimeout(() => {
@@ -130,35 +130,29 @@
         let scene, camera, renderer, meshGroup;
         function initViewer3D() {
             const container = document.getElementById('viewer3d-container');
-            if (!container) return; // Safety check
+            if (!container) return; 
             
             const width = container.clientWidth;
             const height = container.clientHeight;
 
-            // Scene setup
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0x161b22);
-
-            // Camera setup
             camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
             camera.position.z = 3;
 
-            // Renderer setup
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(width, height);
             container.appendChild(renderer.domElement);
 
-            // Lighting
             scene.add(new THREE.AmbientLight(0xffffff, 0.5));
             const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
             directionalLight.position.set(1, 1, 1);
             scene.add(directionalLight);
 
-            // Placeholder Group for the generated mesh
             meshGroup = new THREE.Group();
             scene.add(meshGroup);
 
-            // Add simple orbit controls (Basic rotation implementation)
+            // Orbit controls setup (rotation logic)
             let isDragging = false;
             let previousMousePosition = { x: 0, y: 0 };
 
@@ -176,14 +170,12 @@
                 const deltaX = e.clientX - previousMousePosition.x;
                 const deltaY = e.clientY - previousMousePosition.y;
 
-                // Adjust rotation speed
                 meshGroup.rotation.y += deltaX * 0.005; 
                 meshGroup.rotation.x += deltaY * 0.005;
 
                 previousMousePosition = { x: e.clientX, y: e.clientY };
             });
             
-            // Handle resizing
             window.addEventListener('resize', () => {
                 const newWidth = container.clientWidth;
                 const newHeight = container.clientHeight;
@@ -192,7 +184,6 @@
                 renderer.setSize(newWidth, newHeight);
             });
 
-            // Render loop
             function animate() {
                 requestAnimationFrame(animate);
                 renderer.render(scene, camera);
@@ -200,28 +191,57 @@
             animate();
         }
 
+        /** Checks for and initializes the AI libraries after page load. */
+        function loadAiLibraries() {
+            const generateBtn = document.getElementById('generate-btn');
+            const generateText = document.getElementById('generate-text');
+
+            if (typeof tf !== 'undefined' && typeof midas !== 'undefined') {
+                isAiReady = true;
+                generateText.innerHTML = '📦 Generate 3D Model';
+                // Only enable the button if an image is also selected
+                if (selectedImageBase64) {
+                     generateBtn.disabled = false;
+                }
+                showToast("AI Ready", "TensorFlow and MiDaS models are loaded.", false);
+            } else {
+                // If the initial check fails, mark it and wait
+                if (!initialLoadAttempt) {
+                    initialLoadAttempt = true;
+                    // Start the error countdown in 5 seconds
+                    setTimeout(() => {
+                        if (!isAiReady) {
+                            console.error("CRITICAL ERROR: AI Libraries failed to load after 5 seconds. This is almost always a **CORS/Local File Security** issue. Solution: Run this HTML file via a local web server (e.g., VS Code Live Server or Python's http.server) instead of opening it directly from your file system (file://). Check the Network tab in Dev Tools for blocked scripts.");
+                            generateText.innerHTML = 'AI Load Failed (Check Console)';
+                            showToast("Error", "AI Load Failed. See console for instructions.", true);
+                        }
+                    }, 5000); 
+                }
+                // Retry check every 500ms
+                setTimeout(loadAiLibraries, 500);
+                generateText.innerHTML = 'Waiting for AI Libraries (loading...)';
+            }
+        }
+
         // --- TRELLIS 3D AI Implementation (Depth Estimation and Mesh Generation) ---
 
         /**
          * TRELLIS 3D AI: Depth Estimator (Using MiDaS via TensorFlow.js)
-         * @param {HTMLImageElement} img - The input image element.
-         * @returns {Promise<ImageData>} - The generated depth map as ImageData.
          */
         async function estimateDepth(img) {
+            
             if (!depthModel) {
                 showToast("Loading AI Model", "Loading MiDaS depth model (approx 50MB)...", false);
-                // Load MiDaS model (Large model, may take time)
-                depthModel = await midas.load();
+                // Since isAiReady is true, midas.load() should succeed here.
+                depthModel = await midas.load(); 
                 showToast("AI Model Ready", "Depth estimation model loaded successfully!", false);
             }
 
-            // Estimate depth
             const prediction = await depthModel.estimateDepth(img, {
-                inputResolution: midas.InputResolution.LARGE, // Use large resolution for better results
+                inputResolution: midas.InputResolution.LARGE,
                 encode: false,
             });
 
-            // Normalize and visualize the depth map on a canvas
             const [height, width] = prediction.shape;
             const depthTensor = prediction.squeeze();
             const min = await depthTensor.min().data();
@@ -234,29 +254,24 @@
             const ctx = canvas.getContext('2d');
             const imageData = ctx.createImageData(width, height);
             const data = imageData.data;
-
-            // Get depth data as an array
             const depthData = await depthTensor.data();
 
             for (let i = 0; i < width * height; i++) {
-                // Normalize the depth value (0 to 1) and invert for visualization (dark=close, bright=far)
                 const normalizedDepth = (depthData[i] - min[0]) / range;
-                const invertedGray = Math.floor(255 * (1 - normalizedDepth)); // Invert for traditional depth map view
+                const invertedGray = Math.floor(255 * (1 - normalizedDepth)); 
 
-                data[i * 4] = invertedGray;     // R
-                data[i * 4 + 1] = invertedGray; // G
-                data[i * 4 + 2] = invertedGray; // B
-                data[i * 4 + 3] = 255;          // A
+                data[i * 4] = invertedGray;     
+                data[i * 4 + 1] = invertedGray; 
+                data[i * 4 + 2] = invertedGray; 
+                data[i * 4 + 3] = 255;          
             }
 
-            // Display depth map
             document.getElementById('depth-map-container').innerHTML = '';
             canvas.style.maxWidth = '100%';
             canvas.style.height = 'auto';
             canvas.style.borderRadius = '0.5rem';
             document.getElementById('depth-map-container').appendChild(canvas);
 
-            // Clean up Tensors
             prediction.dispose();
             depthTensor.dispose();
 
@@ -265,8 +280,6 @@
 
         /**
          * TRELLIS 3D AI: Mesh Generator
-         * @param {ImageData} depthMap - The depth map ImageData.
-         * @returns {THREE.BufferGeometry} - The generated 3D mesh geometry.
          */
         function generateMeshFromDepth(depthMap, img) {
             const width = depthMap.width;
@@ -276,41 +289,27 @@
 
             const geometry = new THREE.BufferGeometry();
             const vertices = [];
-            const colors = [];
             const uvs = [];
             const indices = [];
 
-            const scale = 5; // Scaling factor for the 3D model size
-            const depthMultiplier = 0.5; // Controls the perceived depth/extrusion
+            const scale = 5; 
+            const depthMultiplier = 0.5; 
 
             for (let y = 0; y < height; y++) {
                 for (let x = 0; x < width; x++) {
                     const i = (y * width + x);
-                    const depthValue = depthData[i * 4]; // We used R channel for grayscale depth
-                    const normalizedDepth = depthValue / 255; // 0 (near) to 1 (far)
+                    const depthValue = depthData[i * 4]; 
+                    const normalizedDepth = depthValue / 255; 
 
-                    // Position: Use image coordinates (x, y) and depth (z)
                     const xPos = (x / width - 0.5) * scale;
-                    const yPos = (0.5 - y / height) * scale; // Invert y-axis for 3D system
-                    // Invert depth: closer objects should push out more (negative Z)
+                    const yPos = (0.5 - y / height) * scale;
                     const zPos = -normalizedDepth * depthMultiplier; 
 
                     vertices.push(xPos, yPos, zPos);
-
-                    // UVs for texture mapping (using the original image as a texture)
                     uvs.push(x / width, 1 - y / height);
-
-                    // Colors (optional, for vertex color if no texture is used)
-                    if (colorData) {
-                        const r = colorData.data[i * 4] / 255;
-                        const g = colorData.data[i * 4 + 1] / 255;
-                        const b = colorData.data[i * 4 + 2] / 255;
-                        colors.push(r, g, b);
-                    }
                 }
             }
 
-            // Create faces (triangles)
             for (let y = 0; y < height - 1; y++) {
                 for (let x = 0; x < width - 1; x++) {
                     const i = y * width + x;
@@ -318,9 +317,7 @@
                     const iDown = i + width;
                     const iDiag = i + width + 1;
 
-                    // Triangle 1: Top-Left, Top-Right, Bottom-Left
                     indices.push(i, iRight, iDown);
-                    // Triangle 2: Top-Right, Bottom-Right, Bottom-Left
                     indices.push(iRight, iDiag, iDown);
                 }
             }
@@ -329,7 +326,7 @@
             geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
             geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
 
-            geometry.computeVertexNormals(); // Recalculate normals for proper lighting
+            geometry.computeVertexNormals();
             geometry.computeBoundingSphere();
 
             return geometry;
@@ -345,7 +342,7 @@
             return ctx.getImageData(0, 0, img.width, img.height);
         }
 
-        // --- Event Handlers (Defined in Global Scope - FIX for ReferenceError) ---
+        // --- Event Handlers (Global Scope) ---
 
         /** Handles file selection and updates the image preview. */
         function handleImageSelect(event) {
@@ -363,14 +360,18 @@
                 preview.classList.remove('hidden');
                 label.textContent = file.name;
 
-                // Reset outputs
                 document.getElementById('depth-map-container').innerHTML = 'Depth map will appear here after generation.';
                 clearMesh();
                 document.getElementById('export-btn').disabled = true;
 
-                // Enable generate button
-                generateBtn.disabled = false;
-                showToast("Image Selected", "Click 'Generate 3D Model' to start processing.", false);
+                // Only enable generate button if the AI libraries are also ready
+                if (isAiReady) {
+                    generateBtn.disabled = false;
+                    showToast("Image Selected", "Click 'Generate 3D Model' to start processing.", false);
+                } else {
+                    generateBtn.disabled = true; // Ensure it stays disabled
+                    showToast("Image Selected", "Waiting for AI libraries to load before enabling generation...", false);
+                }
             };
             reader.readAsDataURL(file);
         }
@@ -387,7 +388,8 @@
 
         /** Main function to orchestrate depth estimation and 3D mesh generation. */
         async function handleGenerate() {
-            if (!selectedImageBase64 || isProcessing) return;
+            // Initial safety check
+            if (!selectedImageBase64 || isProcessing || !isAiReady) return;
 
             isProcessing = true;
             document.getElementById('generate-btn').disabled = true;
@@ -398,22 +400,18 @@
             clearMesh();
 
             try {
-                // 1. Load image
                 const img = new Image();
                 img.crossOrigin = "anonymous";
                 img.src = selectedImageBase64;
                 await new Promise((resolve) => { img.onload = resolve; });
 
-                // 2. Estimate depth (TRELLIS 3D AI step)
                 showToast("Processing image", "Estimating depth map...", false);
                 const depthMap = await estimateDepth(img);
 
-                // 3. Generate mesh (TRELLIS 3D AI step)
                 showToast("Generating 3D model", "Creating mesh from depth data...", false);
                 const generatedGeometry = generateMeshFromDepth(depthMap, img);
                 currentMesh = generatedGeometry;
 
-                // 4. Create THREE.js Mesh with texture
                 const texture = new THREE.TextureLoader().load(selectedImageBase64);
                 texture.colorSpace = THREE.SRGBColorSpace;
                 const material = new THREE.MeshPhongMaterial({
@@ -422,14 +420,13 @@
                 });
 
                 const mesh = new THREE.Mesh(generatedGeometry, material);
-                meshGroup.add(mesh); // Add to the main group
+                meshGroup.add(mesh);
                 
-                // Center and set rotation
                 generatedGeometry.computeBoundingBox();
                 const center = new THREE.Vector3();
                 generatedGeometry.boundingBox.getCenter(center);
-                meshGroup.position.sub(center); // Recenter the group/mesh
-                meshGroup.rotation.set(0.1, 0, 0); // Initial slight rotation
+                meshGroup.position.sub(center); 
+                meshGroup.rotation.set(0.1, 0, 0);
 
                 showToast("Success!", "3D model generated successfully", false);
             } catch (error) {
@@ -437,10 +434,11 @@
                 showToast("Generation failed", error.message || "An unknown error occurred", true);
             } finally {
                 isProcessing = false;
-                document.getElementById('generate-btn').disabled = !selectedImageBase64;
+                // Re-enable the button only if AI is ready and an image is selected
+                document.getElementById('generate-btn').disabled = !(selectedImageBase64 && isAiReady);
                 document.getElementById('export-btn').disabled = !currentMesh;
                 document.getElementById('loading-spinner').classList.add('hidden');
-                document.getElementById('generate-text').innerHTML = '📦 Generate 3D Model';
+                document.getElementById('generate-text').innerHTML = isAiReady ? '📦 Generate 3D Model' : 'Waiting for AI Libraries...';
             }
         }
 
@@ -452,7 +450,6 @@
             }
 
             try {
-                // Simple OBJ Export function
                 const geometry = currentMesh;
                 const positions = geometry.attributes.position.array;
                 const uvs = geometry.attributes.uv.array;
@@ -460,28 +457,22 @@
                 
                 let objContent = 'o GeneratedMesh\n';
                 
-                // Vertices (v)
                 for (let i = 0; i < positions.length; i += 3) {
-                    objContent += \`v \${positions[i].toFixed(4)} \${positions[i + 1].toFixed(4)} \${positions[i + 2].toFixed(4)}\n\`;
+                    objContent += `v ${positions[i].toFixed(4)} ${positions[i + 1].toFixed(4)} ${positions[i + 2].toFixed(4)}\n`;
                 }
 
-                // UVs (vt)
                 for (let i = 0; i < uvs.length; i += 2) {
-                    objContent += \`vt \${uvs[i].toFixed(4)} \${uvs[i + 1].toFixed(4)}\n\`;
+                    objContent += `vt ${uvs[i].toFixed(4)} ${uvs[i + 1].toFixed(4)}\n`;
                 }
 
-                // Faces (f)
                 for (let i = 0; i < indices.length; i += 3) {
-                    // OBJ indices are 1-based, so we add 1
                     const i1 = indices[i] + 1;
                     const i2 = indices[i + 1] + 1;
                     const i3 = indices[i + 2] + 1;
                     
-                    // Format: f v1/vt1 v2/vt2 v3/vt3
-                    objContent += \`f \${i1}/\${i1} \${i2}/\${i2} \${i3}/\${i3}\n\`;
+                    objContent += `f ${i1}/${i1} ${i2}/${i2} ${i3}/${i3}\n`;
                 }
                 
-                // Download function
                 const blob = new Blob([objContent], { type: 'text/plain' });
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(blob);
@@ -499,12 +490,13 @@
 
         // --- Initialization ---
 
-        // Only run the 3D viewer initialization after all HTML and scripts are loaded.
         window.onload = () => {
             if (typeof THREE !== 'undefined') {
                 initViewer3D();
+                // CRITICAL: Start checking for AI libraries immediately after the page and THREE.js are ready
+                loadAiLibraries(); 
             } else {
-                showToast("Error", "THREE.js library failed to load. Check your internet connection or CDN link.", true);
+                showToast("Error", "THREE.js library failed to load.", true);
             }
         };
     </script>
