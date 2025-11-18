@@ -1,284 +1,21 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 3D Model Generator - GitHub.io</title>
-    
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.17.0/dist/tf.min.js"></script>
-    
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.165.0/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.165.0/examples/js/controls/OrbitControls.js"></script>
-    
-    <script src="https://unpkg.com/lucide@latest"></script>
-    
-    <style>
-        .text-gradient {
-            background-image: linear-gradient(45deg, #10b981, #3b82f6);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        .gradient-primary {
-            background-color: #3b82f6;
-            color: white;
-            transition: background-color 0.2s;
-        }
-        .gradient-primary:hover:not(:disabled) {
-            background-color: #2563eb;
-        }
-        .card {
-            background-color: white;
-            border-radius: 0.5rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
-        }
-        .bg-background { background-color: #f3f4f6; }
-        .min-h-screen { min-height: 100vh; }
-        .loader-spin { animation: spin 1s linear infinite; }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-        #toast-container {
-            position: fixed;
-            top: 1rem;
-            right: 1rem;
-            z-index: 1000;
-        }
-        .toast {
-            margin-top: 0.5rem;
-            padding: 1rem;
-            border-radius: 0.375rem;
-            color: white;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
-            transition: opacity 0.3s ease-out;
-            opacity: 1;
-        }
-        .toast.destructive { background-color: #ef4444; }
-        .toast.success { background-color: #10b981; }
-        .toast.info { background-color: #3b82f6; }
-    </style>
-</head>
-<body class="bg-background">
-    <div id="toast-container"></div>
-    <div class="min-h-screen py-8 px-4">
-        <div class="max-w-7xl mx-auto">
-            <div class="text-center mb-12">
-                <div class="flex items-center justify-center gap-3 mb-4">
-                    <i data-lucide="box" class="w-10 h-10 text-[#3b82f6]"></i>
-                    <h1 class="text-5xl font-bold text-gradient">AI 3D Model Generator</h1>
-                </div>
-                <p class="text-gray-500 text-lg">
-                    Transform 2D images into 3D models using AI • 100% Client-Side • No Server Required
-                </p>
-            </div>
+import { useState, useCallback, useMemo, useEffect } from 'react';
+import { Box, Download, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+// Assuming these are your components from the previous version
+import { ImageUpload } from '@/components/ImageUpload'; 
+import { DepthMapViewer } from '@/components/DepthMapViewer';
+import { Viewer3D } from '@/components/Viewer3D'; // Needs to be updated/created
+import { DepthEstimator } from '@/lib/depthEstimation'; // Now imported from the new file
+import { MeshGenerator } from '@/lib/meshGenerator';   // Now imported from the new file
+import { useToast } from '@/hooks/use-toast';
+import * as THREE from 'three';
 
-            <div class="grid lg:grid-cols-2 gap-6 mb-8">
-                <div class="card p-6 space-y-6">
-                    <div>
-                        <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
-                            <span class="text-[#3b82f6]">1.</span> Upload Image
-                        </h2>
-                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-[#3b82f6] transition cursor-pointer">
-                            <input type="file" id="image-upload-input" accept="image/*" class="hidden"> 
-                            <label for="image-upload-input" id="upload-label" class="block cursor-pointer">
-                                <i data-lucide="image" class="w-8 h-8 mx-auto text-gray-400 mb-2"></i>
-                                <p class="text-sm text-gray-600">Click to upload or drag and drop</p>
-                                <p class="text-xs text-gray-500">PNG, JPG, up to 10MB</p>
-                            </label>
-                            <img id="selected-image-preview" class="mt-4 hidden max-h-64 object-contain mx-auto" src="" alt="Selected Image">
-                        </div>
-                    </div>
-
-                    <div>
-                        <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
-                            <span class="text-[#3b82f6]">2.</span> Depth Map
-                        </h2>
-                        <div id="depth-map-container" class="border border-gray-200 rounded-lg bg-gray-100 flex items-center justify-center h-64 overflow-hidden">
-                            <p id="depth-map-placeholder" class="text-gray-500">Depth Map will appear here</p>
-                            <canvas id="depth-map-canvas" class="hidden max-w-full max-h-full"></canvas>
-                        </div>
-                    </div>
-                    
-                    <div id="model-loading-container" class="space-y-2 pt-6 hidden">
-                        <h3 class="text-sm font-medium text-gray-700 flex items-center gap-2">
-                            <i data-lucide="download-cloud" class="w-4 h-4 text-[#3b82f6]"></i>
-                            Loading AI Model Progress:
-                            <span id="model-progress-text" class="font-bold">0%</span>
-                        </h3>
-                        <div class="w-full bg-gray-200 rounded-full h-2.5">
-                            <div id="model-progress-bar" class="bg-[#3b82f6] h-2.5 rounded-full transition-all duration-100" style="width: 0%"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card p-6 space-y-6">
-                    <div>
-                        <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
-                            <span class="text-[#3b82f6]">3.</span> 3D Model Viewer
-                        </h2>
-                        <div id="viewer-3d-container" class="border border-gray-200 rounded-lg bg-gray-100 flex items-center justify-center h-64 relative">
-                            <div id="threejs-container" class="w-full h-full"></div>
-                            
-                            <p id="viewer-placeholder" class="text-gray-500 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">3D Model will appear here</p>
-                            
-                            <div id="viewer-loading-bar" class="absolute inset-0 bg-gray-800 bg-opacity-70 flex flex-col items-center justify-center hidden">
-                                <i data-lucide="loader-2" class="w-8 h-8 text-white loader-spin mb-3"></i>
-                                <p class="text-white font-semibold">Generating 3D Mesh...</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="space-y-3">
-                        <button id="generate-button" disabled class="w-full h-12 text-base gradient-primary transition-opacity flex items-center justify-center rounded-lg disabled:opacity-50">
-                            <i data-lucide="box" class="w-5 h-5 mr-2"></i>
-                            <span id="generate-text">Generate 3D Model</span>
-                        </button>
-
-                        <button id="export-button" disabled class="w-full h-12 text-base border border-gray-300 text-gray-700 hover:bg-gray-100 transition flex items-center justify-center rounded-lg disabled:opacity-50">
-                            <i data-lucide="download" class="w-5 h-5 mr-2"></i>
-                            Download OBJ
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="grid md:grid-cols-3 gap-4">
-                <div class="card p-4 bg-gray-50 border border-gray-200">
-                    <h3 class="font-semibold text-[#3b82f6] mb-2">🔒 Privacy First</h3>
-                    <p class="text-sm text-gray-500">
-                        All processing happens locally in your browser. No data is uploaded to any server.
-                    </p>
-                </div>
-                <div class="card p-4 bg-gray-50 border border-gray-200">
-                    <h3 class="font-semibold text-[#3b82f6] mb-2">⚡ WebGL Accelerated</h3>
-                    <p class="text-sm text-gray-500">
-                        Powered by TensorFlow.js with WebGL backend for fast performance.
-                    </p>
-                </div>
-                <div class="card p-4 bg-gray-50 border border-gray-200">
-                    <h3 class="font-semibold text-[#3b82f6] mb-2">📦 Export Ready</h3>
-                    <p class="text-sm text-gray-500">
-                        Export to OBJ format compatible with Blender, Unity, and other 3D tools.
-                    </p>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <script>
-        // --- GLOBAL STATE ---
-        let selectedImageBase64 = null;
-        let depthMapImageData = null;
-        let generatedMesh = null;
-        let isProcessing = false;
-
-        // --- ELEMENTS ---
-        const imageInput = document.getElementById('image-upload-input');
-        const imagePreview = document.getElementById('selected-image-preview');
-        const uploadLabel = document.getElementById('upload-label');
-        const generateButton = document.getElementById('generate-button');
-        const exportButton = document.getElementById('export-button');
-        const depthMapCanvas = document.getElementById('depth-map-canvas');
-        const depthMapPlaceholder = document.getElementById('depth-map-placeholder');
-        const viewerContainer = document.getElementById('threejs-container');
-        const viewerPlaceholder = document.getElementById('viewer-placeholder');
-        const viewerLoadingBar = document.getElementById('viewer-loading-bar');
-        
-        // PROGRESS BAR ELEMENTS
-        const modelLoadingContainer = document.getElementById('model-loading-container');
-        const modelProgressBar = document.getElementById('model-progress-bar');
-        const modelProgressText = document.getElementById('model-progress-text');
-
-
-        // --- UTILITY FUNCTIONS ---
-
-        function waitForLibrary(libraryName) {
-            return new Promise((resolve) => {
-                const check = () => {
-                    if (typeof window[libraryName] !== 'undefined') {
-                        resolve();
-                    } else {
-                        setTimeout(check, 100);
-                    }
-                };
-                check();
-            });
-        }
-        
-        function updateModelProgress(fraction) {
-            const percentage = Math.round(fraction * 100);
-            modelProgressBar.style.width = `${percentage}%`;
-            modelProgressText.textContent = `${percentage}%`;
-            
-            if (percentage < 100) {
-                modelLoadingContainer.classList.remove('hidden');
-            } else {
-                // Hide container slightly later after model load is complete
-                setTimeout(() => {
-                    modelLoadingContainer.classList.add('hidden');
-                }, 500); 
-            }
-        }
-
-        // --- TOAST NOTIFICATION SYSTEM ---
-        const toastContainer = document.getElementById('toast-container');
-        function showToast({ title, description, variant = 'info' }) {
-            const toastDiv = document.createElement('div');
-            toastDiv.className = `toast ${variant} max-w-sm`;
-            toastDiv.innerHTML = `
-                <div class="font-bold">${title}</div>
-                <p class="text-sm">${description}</p>
-            `;
-            toastContainer.appendChild(toastDiv);
-
-            setTimeout(() => {
-                toastDiv.style.opacity = '0';
-                setTimeout(() => toastDiv.remove(), 300);
-            }, 5000);
-        }
-
-        // --- VIEWER LOADING STATE MANAGEMENT ---
-
-        function startViewerLoading() {
-            viewerLoadingBar.classList.remove('hidden');
-            viewerPlaceholder.classList.add('hidden');
-            lucide.createIcons(); 
-        }
-
-        function stopViewerLoading() {
-            viewerLoadingBar.classList.add('hidden');
-        }
-
-        // --- 1. IMAGE UPLOAD LOGIC ---
-        imageInput.addEventListener('change', (event) => {
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    selectedImageBase64 = e.target.result;
-                    imagePreview.src = selectedImageBase64;
-                    imagePreview.classList.remove('hidden');
-                    uploadLabel.classList.add('hidden');
-                    
-                    depthMapImageData = null;
-                    generatedMesh = null;
-                    clearDepthMap();
-                    clear3DViewer();
-                    
-                    generateButton.disabled = false;
-                    exportButton.disabled = true;
-                    showToast({ title: "Image Uploaded", description: "Click 'Generate 3D Model' to begin processing.", variant: 'success' });
-                };
-                reader.readAsDataURL(file);
-            }
-        });
-
-
-// ------------------ Insert: image resize helper ------------------
-/**
- * Resize an HTMLImageElement to maxSize (preserving aspect ratio).
- * Returns a new HTMLImageElement (data URL) that is safe to process quickly.
- */
-async function resizeImageToMax(img, maxSize = 1024) {
-    // If already small enough, return original image
+// ---------------------------------------------------------------------------------------------------
+// UTILITY: Image Resize (Typically lives in '@/lib/utils.ts')
+// This is essential for preventing browser crashes with high-res images.
+// ---------------------------------------------------------------------------------------------------
+async function resizeImageToMax(img: HTMLImageElement, maxSize = 1024): Promise<HTMLImageElement> {
     if (img.naturalWidth <= maxSize && img.naturalHeight <= maxSize) {
         return img;
     }
@@ -290,447 +27,267 @@ async function resizeImageToMax(img, maxSize = 1024) {
     const canvas = document.createElement('canvas');
     canvas.width = w; canvas.height = h;
     const ctx = canvas.getContext('2d');
-    // draw with smoothing
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
-    ctx.drawImage(img, 0, 0, w, h);
-
+    
+    if (ctx) {
+        ctx.imageSmoothingEnabled = true;
+        (ctx as any).imageSmoothingQuality = 'high';
+        ctx.drawImage(img, 0, 0, w, h);
+    }
+    
     const resizedImg = new Image();
     resizedImg.crossOrigin = 'anonymous';
     resizedImg.src = canvas.toDataURL('image/png');
     await new Promise((res, rej) => { resizedImg.onload = res; resizedImg.onerror = rej; });
     return resizedImg;
 }
-// ------------------ End insert ------------------
 
+// ---------------------------------------------------------------------------------------------------
+// MAIN COMPONENT
+// ---------------------------------------------------------------------------------------------------
 
-        // --- 2. DEPTH ESTIMATION CLASS ---
-        class DepthEstimator {
-            constructor() {
-                this.model = null;
-                this.inputSize = 256; 
-            }
+const Index = () => {
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [depthMap, setDepthMap] = useState<ImageData | null>(null);
+  const [mesh, setMesh] = useState<THREE.BufferGeometry | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [modelLoadProgress, setModelLoadProgress] = useState(0); // For the AI model loading bar
+  const { toast } = useToast();
 
-            async loadModel() {
-                if (!this.model) {
-                    showToast({ title: "Loading AI Model", description: "Downloading depth estimation model (This may take a moment)..." });
-                    
-                    // DEFINITIVE FIX: Switched to the reliable MiDaS v2.1 Small model hosted on TF Hub
-                    const MODEL_URL = 'https://tfhub.dev/intel/midas/v2_small/2/default/1/model.json?tfjs-format=file';
-                    
-                    try {
-                        this.model = await tf.loadGraphModel(MODEL_URL, { 
-                            onerror: (e) => { console.error("Model load error:", e); },
-                            onProgress: (fraction) => {
-                                updateModelProgress(fraction);
-                            },
-                            // Preserve fix for stalled download issues
-                            credentials: 'omit'
-                        });
-                        showToast({ title: "Model Ready", description: "AI model loaded successfully.", variant: 'success' });
-                    } catch (e) {
-                        console.error("Model loading failed:", e);
-                        this.model = 'fallback';
-                        showToast({ title: "Using Fallback", description: `Model failed to load. Reason: ${e.message}. Using alternative method.`, variant: 'info' });
-                    }
-                }
-            }
+  // Initialize classes using useMemo to ensure they are consistent instances
+  const depthEstimator = useMemo(() => new DepthEstimator(), []);
+  const meshGenerator = useMemo(() => new MeshGenerator(), []);
 
-            async estimateDepth(image) {
-                await this.loadModel();
+  const handleImageSelect = useCallback((file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setSelectedImage(e.target?.result as string);
+      setDepthMap(null);
+      setMesh(null);
+      // Reset model progress if a new image is selected before processing
+      setModelLoadProgress(0); 
+    };
+    reader.readAsDataURL(file);
+  }, []);
+
+  // Function to handle model loading progress from DepthEstimator
+  const handleModelProgress = useCallback((fraction: number) => {
+    setModelLoadProgress(Math.round(fraction * 100));
+  }, []);
+
+  const handleGenerate = async () => {
+    if (!selectedImage) {
+      toast({
+        title: "No image selected",
+        description: "Please upload an image first",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsProcessing(true);
+    clear3DViewer(); // Clear previous mesh before starting
+
+    try {
+      // 1) Load original image (used for high-res texture on the final mesh)
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.src = selectedImage;
+      await new Promise((res, rej) => { img.onload = res; img.onerror = rej; });
+
+      // 2) Resize a copy for depth estimation/mesh generation (performance)
+      const MAX_PROCESS_SIZE = 1024;
+      const resizedForDepth = await resizeImageToMax(img, MAX_PROCESS_SIZE);
+
+      // 3) Load AI Model (if not already loaded)
+      // The loadModel is called inside estimateDepth, which handles the progress update
+      toast({
+        title: "Processing image",
+        description: "Loading AI model and estimating depth map...",
+      });
+
+      // 4) Estimate depth using the RESIZED image
+      // Pass the progress handler to the DepthEstimator
+      const estimatedDepth = await depthEstimator.estimateDepth(resizedForDepth, handleModelProgress);
+      setDepthMap(new ImageData(estimatedDepth.data, estimatedDepth.width, estimatedDepth.height));
+      setModelLoadProgress(100); // Set to 100% after processing starts
+
+      toast({
+        title: "Generating 3D model",
+        description: "Creating mesh from depth data...",
+      });
+      
+      // 5) Generate mesh
+      const generatedMesh = meshGenerator.generateMeshFromDepth(estimatedDepth);
+      setMesh(generatedMesh);
+
+      toast({
+        title: "Success!",
+        description: "3D model generated successfully. Try rotating it!",
+        variant: "success",
+      });
+
+    } catch (error) {
+      console.error('Generation error:', error);
+      toast({
+        title: "Generation failed",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        variant: "destructive",
+      });
+      setModelLoadProgress(0);
+    } finally {
+      setIsProcessing(false);
+      // Hide loading bar after a small delay if it finished successfully
+      setTimeout(() => setModelLoadProgress(0), 1000); 
+    }
+  };
+
+  const handleExport = () => {
+    if (!mesh) {
+      toast({ title: "No model to export", description: "Please generate a 3D model first", variant: "destructive" });
+      return;
+    }
+    try {
+      const objContent = meshGenerator.exportToOBJ(mesh);
+      meshGenerator.downloadOBJ(objContent);
+      toast({ title: "Export successful", description: "OBJ file downloaded", variant: 'success' });
+    } catch (error) {
+      toast({ title: "Export failed", description: "Failed to export the model", variant: "destructive" });
+    }
+  };
+    
+  // Placeholder for clearing the viewer (actual logic resides in Viewer3D)
+  const clear3DViewer = () => {
+    // In a React context, clearing the mesh state triggers the Viewer3D component to clean up
+    setMesh(null);
+  };
+    
+  const showModelLoading = modelLoadProgress > 0 && modelLoadProgress < 100;
+
+  return (
+    <div className="min-h-screen bg-background py-8 px-4">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-12">
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <Box className="w-10 h-10 text-primary" />
+            <h1 className="text-5xl font-bold text-gradient">
+              AI 3D Model Generator
+            </h1>
+          </div>
+          <p className="text-muted-foreground text-lg">
+            Transform 2D images into 3D models using AI • 100% Client-Side • No Server Required
+          </p>
+        </div>
+
+        {/* Main Content */}
+        <div className="grid lg:grid-cols-2 gap-6 mb-8">
+          {/* Left Column */}
+          <Card className="p-6 space-y-6">
+            <div>
+              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                <span className="text-primary">1.</span> Upload Image
+              </h2>
+              <ImageUpload
+                onImageSelect={handleImageSelect}
+                selectedImage={selectedImage}
+                isProcessing={isProcessing}
+              />
+            </div>
+
+            <div>
+              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                <span className="text-primary">2.</span> Depth Map
+              </h2>
+              <DepthMapViewer depthMap={depthMap} />
+            </div>
                 
-                // Ensure progress bar is hidden if model was loaded on a previous run
-                if (this.model !== 'fallback') {
-                    updateModelProgress(1.0); 
-                }
+            {/* AI Model Loading Progress Bar (From vanilla code) */}
+            <div className={`space-y-2 pt-6 ${showModelLoading ? '' : 'hidden'}`}>
+                <h3 className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 text-primary animate-spin" />
+                    Loading AI Model Progress:
+                    <span id="model-progress-text" className="font-bold">{modelLoadProgress}%</span>
+                </h3>
+                <div className="w-full bg-gray-200 rounded-full h-2.5">
+                    <div 
+                        id="model-progress-bar" 
+                        className="bg-primary h-2.5 rounded-full transition-all duration-100" 
+                        style={{ width: `${modelLoadProgress}%` }}
+                    ></div>
+                </div>
+            </div>
+          </Card>
 
-                if (this.model === 'fallback') {
-                    return this.fallbackDepthEstimation(image);
-                }
-                
-                // ... (Depth estimation logic using TensorFlow.js) ...
-                const tfImage = tf.browser.fromPixels(image);
-                const resizedImage = tf.image.resizeBilinear(tfImage, [this.inputSize, this.inputSize]);
-                const normalized = resizedImage.div(255.0);
-                const batched = normalized.expandDims(0);
+          {/* Right Column */}
+          <Card className="p-6 space-y-6">
+            <div>
+              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                <span className="text-primary">3.</span> 3D Model Viewer
+              </h2>
+              {/* The Viewer3D component must be implemented to use the provided Three.js logic */}
+              <Viewer3D 
+                 mesh={mesh} 
+                 textureImageSrc={selectedImage} 
+                 isProcessing={isProcessing} 
+               />
+            </div>
 
-                const outputTensor = await this.model.predict(batched);
-                let depthMapTensor = outputTensor;
+            <div className="space-y-3">
+              <Button
+                onClick={handleGenerate}
+                disabled={!selectedImage || isProcessing}
+                className="w-full h-12 text-base gradient-primary hover:opacity-90 transition-opacity"
+              >
+                {isProcessing ? (
+                  <>
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <Box className="w-5 h-5 mr-2" />
+                    Generate 3D Model
+                  </>
+                )}
+              </Button>
 
-                const min = depthMapTensor.min();
-                const max = depthMapTensor.max();
-                
-                const invertedNormalizedDepth = tf.sub(1.0, depthMapTensor.sub(min).div(max.sub(min))).squeeze(); 
-                const resizedDepth = tf.image.resizeBilinear(invertedNormalizedDepth.expandDims(2), [image.height, image.width]);
-                const scaledDepth = resizedDepth.mul(255).cast('int32').clipByValue(0, 255);
-                
-                const depthData = await scaledDepth.data();
-                const depthMapData = new Uint8ClampedArray(image.width * image.height * 4);
+              <Button
+                onClick={handleExport}
+                disabled={!mesh || isProcessing}
+                variant="outline"
+                className="w-full h-12 text-base border-primary/30 hover:bg-primary/10"
+              >
+                <Download className="w-5 h-5 mr-2" />
+                Download OBJ
+              </Button>
+            </div>
+          </Card>
+        </div>
 
-                for (let i = 0; i < depthData.length; i++) {
-                    const depthValue = depthData[i];
-                    const index = i * 4;
-                    depthMapData[index] = depthValue;     
-                    depthMapData[index + 1] = depthValue; 
-                    depthMapData[index + 2] = depthValue; 
-                    depthMapData[index + 3] = 255;        
-                }
+        {/* Info Cards */}
+        <div className="grid md:grid-cols-3 gap-4">
+          <Card className="p-4 bg-card/50 border-primary/20">
+            <h3 className="font-semibold text-primary mb-2">🔒 Privacy First</h3>
+            <p className="text-sm text-muted-foreground">
+              All processing happens locally in your browser. No data is uploaded to any server.
+            </p>
+          </Card>
+          <Card className="p-4 bg-card/50 border-primary/20">
+            <h3 className="font-semibold text-primary mb-2">⚡ WebGL Accelerated</h3>
+            <p className="text-sm text-muted-foreground">
+              Powered by TensorFlow.js with WebGL backend for fast performance.
+            </p>
+          </Card>
+          <Card className="p-4 bg-card/50 border-primary/20">
+            <h3 className="font-semibold text-primary mb-2">📦 Export Ready</h3>
+            <p className="text-sm text-muted-foreground">
+              Export to OBJ format compatible with Blender, Unity, and other 3D tools.
+            </p>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+};
 
-                tfImage.dispose(); resizedImage.dispose(); normalized.dispose(); batched.dispose();
-                outputTensor.dispose(); invertedNormalizedDepth.dispose(); resizedDepth.dispose(); scaledDepth.dispose();
-
-                return new ImageData(depthMapData, image.width, image.height);
-            }
-
-            fallbackDepthEstimation(image) {
-                // ... (Fallback logic is unchanged) ...
-                const canvas = document.createElement('canvas');
-                canvas.width = image.width;
-                canvas.height = image.height;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(image, 0, 0);
-                
-                const imageData = ctx.getImageData(0, 0, image.width, image.height);
-                const data = imageData.data;
-                const depthData = new Uint8ClampedArray(image.width * image.height * 4);
-                
-                for (let y = 0; y < image.height; y++) {
-                    for (let x = 0; x < image.width; x++) {
-                        const i = (y * image.width + x) * 4;
-                        const luminance = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
-                        const verticalBias = (y / image.height) * 80;
-                        const depthValue = Math.min(255, Math.max(0, (255 - luminance) * 0.7 + verticalBias));
-                        
-                        depthData[i] = depthValue;
-                        depthData[i + 1] = depthValue;
-                        depthData[i + 2] = depthValue;
-                        depthData[i + 3] = 255;
-                    }
-                }
-                
-                return new ImageData(depthData, image.width, image.height);
-            }
-        }
-        
-        // --- DEPTH MAP VIEWER ---
-        function clearDepthMap() {
-            depthMapCanvas.classList.add('hidden');
-            depthMapPlaceholder.classList.remove('hidden');
-            depthMapCanvas.width = 0;
-            depthMapCanvas.height = 0;
-            updateModelProgress(0); // Reset progress bar on clear
-        }
-
-        function displayDepthMap(imageData) {
-            depthMapCanvas.width = imageData.width;
-            depthMapCanvas.height = imageData.height;
-            const ctx = depthMapCanvas.getContext('2d');
-            ctx.putImageData(imageData, 0, 0);
-            
-            depthMapCanvas.style.width = 'auto';
-            depthMapCanvas.style.height = '100%';
-            depthMapCanvas.classList.remove('hidden');
-            depthMapPlaceholder.classList.add('hidden');
-        }
-
-        // --- 3. MESH GENERATOR ---
-        class MeshGenerator {
-            generateMeshFromDepth(imageData) {
-                if (typeof THREE === 'undefined') {
-                    console.error("THREE is not defined, cannot generate mesh.");
-                    return null;
-                }
-                const { data, width, height } = imageData;
-                
-                const MAX_PIXELS = 1024 * 1024; // Limit to 1,048,576 pixels (1024x1024)
-                
-                if (width * height > MAX_PIXELS) {
-                    // This check is redundant now due to resizeImageToMax, but kept as a fallback.
-                    throw new Error(`Input depth map too large (${width}x${height}). Max supported size for 3D generation is ~1024x1024.`);
-                }
-                
-                if (width <= 1 || height <= 1 || data.length === 0) {
-                    console.error("Invalid image data dimensions for mesh generation.");
-                    return null;
-                }
-                
-                const geometry = new THREE.BufferGeometry();
-                
-                const vertices = [];
-                const uvs = [];
-                const indices = [];
-
-                const depthScale = 0.5;
-                const aspectRatio = width / height;
-
-                for (let y = 0; y < height; y++) {
-                    for (let x = 0; x < width; x++) {
-                        const i = (y * width + x) * 4;
-                        const normalizedDepth = data[i] / 255.0; 
-                        
-                        const vx = (x / (width - 1) - 0.5) * aspectRatio; 
-                        const vy = (0.5 - y / (height - 1)); 
-                        const vz = normalizedDepth * depthScale; 
-                        
-                        vertices.push(vx, vy, vz);
-                        uvs.push(x / (width - 1), 1 - y / (height - 1)); 
-                    }
-                }
-
-                for (let y = 0; y < height - 1; y++) {
-                    for (let x = 0; x < width - 1; x++) {
-                        const i = y * width + x;
-                        const i_right = y * width + x + 1;
-                        const i_down = (y + 1) * width + x;
-                        const i_diag = (y + 1) * width + x + 1;
-
-                        indices.push(i, i_down, i_right);
-                        indices.push(i_right, i_down, i_diag);
-                    }
-                }
-
-                geometry.setIndex(indices);
-                geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
-                geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
-                geometry.computeVertexNormals();
-                
-                return geometry;
-            }
-
-            exportToOBJ(geometry) {
-                const vertices = geometry.getAttribute('position').array;
-                const indices = geometry.getIndex().array;
-                let obj = '# OBJ file generated from Depth Map\n';
-                
-                for (let i = 0; i < vertices.length; i += 3) {
-                    obj += `v ${vertices[i]} ${vertices[i + 1]} ${vertices[i + 2]}\n`;
-                }
-
-                for (let i = 0; i < indices.length; i += 3) {
-                    const v1 = indices[i] + 1;
-                    const v2 = indices[i + 1] + 1;
-                    const v3 = indices[i + 2] + 1;
-                    obj += `f ${v1} ${v2} ${v3}\n`;
-                }
-                return obj;
-            }
-
-            downloadOBJ(content) {
-                const blob = new Blob([content], { type: 'text/plain' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = '3d_model_from_depth.obj';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-            }
-        }
-
-        // --- 4. 3D VIEWER (Three.js) ---
-        let scene, camera, renderer, controls, meshObject, ambientLight, directionalLight;
-
-        async function init3DViewer() {
-            await waitForLibrary('THREE');
-            
-            if (scene) return; 
-
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0xf0f0f0); 
-
-            camera = new THREE.PerspectiveCamera(75, viewerContainer.clientWidth / viewerContainer.clientHeight, 0.1, 1000);
-            camera.position.z = 2;
-
-            renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setSize(viewerContainer.clientWidth, viewerContainer.clientHeight);
-            viewerContainer.appendChild(renderer.domElement);
-
-            ambientLight = new THREE.AmbientLight(0x404040, 5);
-            scene.add(ambientLight);
-
-            directionalLight = new THREE.DirectionalLight(0xffffff, 3);
-            directionalLight.position.set(1, 1, 1).normalize();
-            scene.add(directionalLight);
-
-            if (typeof THREE.OrbitControls !== 'undefined') {
-                controls = new THREE.OrbitControls(camera, renderer.domElement);
-                controls.enableDamping = true;
-                controls.dampingFactor = 0.25;
-                controls.screenSpacePanning = false;
-                controls.minDistance = 0.5;
-                controls.maxDistance = 5;
-            } else {
-                console.warn("THREE.OrbitControls not found. Check CDN link.");
-            }
-
-            window.addEventListener('resize', onWindowResize, false);
-
-            animate();
-        }
-
-        function onWindowResize() {
-            if (camera && renderer) {
-                camera.aspect = viewerContainer.clientWidth / viewerContainer.clientHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(viewerContainer.clientWidth, viewerContainer.clientHeight);
-            }
-        }
-        
-        function animate() {
-            requestAnimationFrame(animate);
-            if (controls) controls.update(); 
-            if (renderer && scene && camera) renderer.render(scene, camera);
-        }
-
-        function clear3DViewer() {
-            if (meshObject) {
-                scene.remove(meshObject);
-                meshObject.geometry.dispose();
-                if (Array.isArray(meshObject.material)) {
-                    meshObject.material.forEach(m => m.dispose());
-                } else {
-                    meshObject.material.dispose();
-                }
-                meshObject = null;
-            }
-            stopViewerLoading(); 
-            viewerPlaceholder.classList.remove('hidden'); 
-        }
-
-        function displayMesh(geometry, textureImage) {
-            startViewerLoading(); 
-
-            const material = new THREE.MeshLambertMaterial({ 
-                side: THREE.DoubleSide,
-            });
-            meshObject = new THREE.Mesh(geometry, material);
-            scene.add(meshObject);
-            viewerPlaceholder.classList.add('hidden');
-            
-            // --- RECENTERING AND CAMERA SETUP ---
-            const box = new THREE.Box3().setFromObject(meshObject);
-            const size = box.getSize(new THREE.Vector3());
-            const center = box.getCenter(new THREE.Vector3());
-
-            meshObject.position.sub(center); 
-            
-            if (controls) {
-                controls.target.copy(meshObject.position);
-            }
-            
-            const maxDim = Math.max(size.x, size.y, size.z);
-            const fitFactor = 2; 
-            const newDistance = maxDim * fitFactor;
-            
-            camera.position.set(0, 0, newDistance); 
-            
-            camera.updateProjectionMatrix();
-            if (controls) controls.update();
-
-            // --- TEXTURE LOADING (ASYNCHRONOUS) ---
-            new THREE.TextureLoader().load(textureImage.src, 
-                // SUCCESS CALLBACK
-                (texture) => {
-                    meshObject.material.map = texture;
-                    meshObject.material.needsUpdate = true;
-                    stopViewerLoading(); 
-                    showToast({ title: "3D Model Ready", description: "Use your mouse to rotate the model.", variant: 'success' });
-                    exportButton.disabled = false;
-                },
-                undefined, // Progress callback (not used for texture load)
-                // ERROR CALLBACK
-                (error) => {
-                    console.error('Texture loading error:', error);
-                    stopViewerLoading(); 
-                    showToast({ title: "Texture Error", description: "Failed to load image texture. Displaying untextured mesh.", variant: 'info' });
-                    exportButton.disabled = false;
-                }
-            );
-        }
-        
-        // --- MAIN APPLICATION EXECUTION ---
-        const depthEstimator = new DepthEstimator();
-        const meshGenerator = new MeshGenerator();
-
-        generateButton.addEventListener('click', async () => {
-            if (!selectedImageBase64 || isProcessing) return;
-
-            isProcessing = true;
-            generateButton.disabled = true;
-            generateButton.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 mr-2 loader-spin"></i> Processing...`;
-            lucide.createIcons();
-            exportButton.disabled = true;
-
-            try {
-                // 1) Load original image (for texture & preview)
-                const img = new Image();
-                img.crossOrigin = 'anonymous';
-                img.src = selectedImageBase64;
-                await new Promise((res, rej) => { img.onload = res; img.onerror = rej; });
-
-                // 2) Resize a copy for depth estimation & mesh generation to avoid freezing the browser.
-                //    Set maxSize to 1024 (or 512 for faster results).
-                const MAX_PROCESS_SIZE = 1024;
-                const resizedForDepth = await resizeImageToMax(img, MAX_PROCESS_SIZE);
-
-                showToast({ title: 'Processing image', description: 'Estimating depth map using client-side approximation...' });
-
-                // 3) Estimate depth using the resized image (fast & deterministic)
-                const estimatedDepth = await depthEstimator.estimateDepth(resizedForDepth);
-                if (!estimatedDepth || !estimatedDepth.data) throw new Error('Depth estimation returned invalid data.');
-
-                // 4) Show depth map. If depth map is smaller than the original, show the resized depth map
-                //    but keep the original image for texture (so texture remains high quality)
-                depthMapImageData = estimatedDepth;
-                displayDepthMap(estimatedDepth);
-
-                showToast({ title: 'Generating 3D model', description: 'Creating mesh from depth data...' });
-
-                // 5) Generate mesh from the depth map. IMPORTANT: max pixels check is applied in generator.
-                await waitForLibrary('THREE');
-                const generated = meshGenerator.generateMeshFromDepth(estimatedDepth);
-                if (!generated) throw new Error('Mesh generation failed.');
-
-                generatedMesh = generated;
-
-                // 6) Display the mesh. Pass the original high-res image for texture.
-                displayMesh(generated, img);
-            } catch (err) {
-                console.error('Generation error:', err);
-                stopViewerLoading();
-                // Show an informative message with the error message and ask user to try a smaller image.
-                const msg = (err && err.message) ? err.message : 'Unknown error';
-                showToast({ title: 'Generation failed', description: `${msg} — try a smaller image (<=1024px)`, variant: 'destructive' });
-            } finally {
-                isProcessing = false;
-                generateButton.disabled = !selectedImageBase64; 
-                generateButton.innerHTML = `<i data-lucide="box" class="w-5 h-5 mr-2"></i> <span id="generate-text">Generate 3D Model</span>`;
-                lucide.createIcons(); 
-            }
-        });
-
-        exportButton.addEventListener('click', () => {
-            if (!generatedMesh) {
-                showToast({ title: "No model to export", description: "Please generate a 3D model first", variant: 'destructive' });
-                return;
-            }
-            
-            try {
-                const objContent = meshGenerator.exportToOBJ(generatedMesh);
-                meshGenerator.downloadOBJ(objContent);
-                showToast({ title: "Export successful", description: "OBJ file downloaded", variant: 'success' });
-            } catch (error) {
-                showToast({ title: "Export failed", description: "Failed to export the model", variant: 'destructive' });
-            }
-        });
-        
-        // --- INITIALIZATION ---
-        (async function() {
-            await init3DViewer(); 
-            lucide.createIcons(); 
-        })();
-
-    </script>
-</body>
-</html>
+export default Index;
