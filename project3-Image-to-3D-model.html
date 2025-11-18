@@ -210,8 +210,8 @@
                 if (!this.model) {
                     showToast({ title: "Loading AI Model", description: "Downloading depth estimation model (This may take a moment)..." });
                     
-                    // FIX: Using the MiDaS Large public model URL which is currently stable
-                    const MODEL_URL = 'https://storage.googleapis.com/tfjs-models/demos/midas/large/model.json';
+                    // FIX: Using a stable, versioned model hosted on GitHub CDN to resolve the 404 error
+                    const MODEL_URL = 'https://cdn.jsdelivr.net/gh/tensorflow/tfjs-models@master/midas/large/model.json';
                     
                     this.model = await tf.loadGraphModel(MODEL_URL);
 
@@ -390,7 +390,7 @@
         function init3DViewer() {
             if (scene) return; 
 
-            // THREE is guaranteed to be defined because scripts are loaded synchronously in the head
+            // THREE is guaranteed to be defined as scripts are loaded synchronously
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0xf0f0f0); 
 
@@ -542,11 +542,11 @@
         });
         
         // --- Initialization on load ---
-        // window.onload is used to ensure the entire page (including all elements and synchronously loaded scripts) is ready.
-        window.onload = () => {
+        // Final Fix: Run initialization immediately at the end of the body
+        (function() {
             init3DViewer(); 
             lucide.createIcons(); 
-        };
+        })();
 
     </script>
 </body>
