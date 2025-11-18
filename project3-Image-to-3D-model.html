@@ -203,16 +203,16 @@
         class DepthEstimator {
             constructor() {
                 this.model = null;
-                // Input size for the Depth-Anything-Small model
-                this.inputSize = 518; 
+                // Changed input size back to MiDaS v2_lite default
+                this.inputSize = 256; 
             }
 
             async loadModel() {
                 if (!this.model) {
                     showToast({ title: "Loading AI Model", description: "Downloading depth estimation model (This may take a moment)..." });
                     
-                    // FIX: Use a model URL that typically does NOT have CORS issues on static sites
-                    const MODEL_URL = 'https://huggingface.co/spaces/Float11/depth-anything-tfjs/resolve/main/depth-anything-small-518/model.json';
+                    // FIX: Use a stable, non-TFHub URL for MiDaS v2_lite model weights
+                    const MODEL_URL = 'https://storage.googleapis.com/tfjs-models/demos/midas/model.json';
                     
                     this.model = await tf.loadGraphModel(MODEL_URL);
 
@@ -251,10 +251,10 @@
                 for (let i = 0; i < depthData.length; i++) {
                     const depthValue = depthData[i];
                     const index = i * 4;
-                    depthMapData[index] = depthValue;     // R
-                    depthMapData[index + 1] = depthValue; // G
-                    depthMapData[index + 2] = depthValue; // B
-                    depthMapData[index + 3] = 255;        // A
+                    depthMapData[index] = depthValue;     
+                    depthMapData[index + 1] = depthValue; 
+                    depthMapData[index + 2] = depthValue; 
+                    depthMapData[index + 3] = 255;        
                 }
 
                 // Cleanup Tensors
@@ -391,6 +391,7 @@
         function init3DViewer() {
             if (scene) return; 
 
+            // FIX: THREE is now guaranteed to be defined here due to window.onload handler
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0xf0f0f0); 
 
@@ -489,7 +490,7 @@
             isProcessing = true;
             generateButton.disabled = true;
             generateButton.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 mr-2 loader-spin"></i> Processing...`;
-            lucide.createIcons(); // Re-create icons to render the spinner
+            lucide.createIcons(); 
 
             exportButton.disabled = true;
 
@@ -522,7 +523,7 @@
                 isProcessing = false;
                 generateButton.disabled = !selectedImageBase64;
                 generateButton.innerHTML = `<i data-lucide="box" class="w-5 h-5 mr-2"></i> <span id="generate-text">Generate 3D Model</span>`;
-                lucide.createIcons(); // Re-create icons to show the box icon again
+                lucide.createIcons(); 
             }
         });
 
@@ -542,11 +543,11 @@
         });
         
         // --- Initialization on load ---
-        document.addEventListener('DOMContentLoaded', () => {
-            // FIX: This ensures all deferred scripts (including Three.js and Lucide) are ready
+        // FIX: Using window.onload ensures ALL deferred scripts (Three.js, OrbitControls, Lucide) have loaded and executed.
+        window.onload = () => {
             init3DViewer(); 
             lucide.createIcons(); 
-        });
+        };
 
     </script>
 </body>
