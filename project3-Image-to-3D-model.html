@@ -105,7 +105,13 @@
                         </h2>
                         <div id="viewer-3d-container" class="border border-gray-200 rounded-lg bg-gray-100 flex items-center justify-center h-64 relative">
                             <div id="threejs-container" class="w-full h-full"></div>
+                            
                             <p id="viewer-placeholder" class="text-gray-500 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">3D Model will appear here</p>
+                            
+                            <div id="viewer-loading-bar" class="absolute inset-0 bg-gray-800 bg-opacity-70 flex flex-col items-center justify-center hidden">
+                                <i data-lucide="loader-2" class="w-8 h-8 text-white loader-spin mb-3"></i>
+                                <p class="text-white font-semibold">Generating 3D Mesh...</p>
+                            </div>
                         </div>
                     </div>
 
@@ -153,7 +159,20 @@
         let generatedMesh = null;
         let isProcessing = false;
 
-        // Utility to wait for libraries like THREE.js to be ready
+        // --- ELEMENTS ---
+        const imageInput = document.getElementById('image-upload-input');
+        const imagePreview = document.getElementById('selected-image-preview');
+        const uploadLabel = document.getElementById('upload-label');
+        const generateButton = document.getElementById('generate-button');
+        const exportButton = document.getElementById('export-button');
+        const depthMapCanvas = document.getElementById('depth-map-canvas');
+        const depthMapPlaceholder = document.getElementById('depth-map-placeholder');
+        const viewerContainer = document.getElementById('threejs-container');
+        const viewerPlaceholder = document.getElementById('viewer-placeholder');
+        const viewerLoadingBar = document.getElementById('viewer-loading-bar');
+
+        // --- UTILITY FUNCTIONS ---
+
         function waitForLibrary(libraryName) {
             return new Promise((resolve) => {
                 const check = () => {
@@ -184,31 +203,35 @@
             }, 5000);
         }
 
-        // --- 1. IMAGE UPLOAD LOGIC ---
-        const imageInput = document.getElementById('image-upload-input');
-        const imagePreview = document.getElementById('selected-image-preview');
-        const uploadLabel = document.getElementById('upload-label');
-        const generateButton = document.getElementById('generate-button');
-        const exportButton = document.getElementById('export-button');
+        // --- VIEWER LOADING STATE MANAGEMENT ---
 
+        function startViewerLoading() {
+            viewerLoadingBar.classList.remove('hidden');
+            viewerPlaceholder.classList.add('hidden');
+            // Re-create icons to ensure the spinner is visible
+            lucide.createIcons(); 
+        }
+
+        function stopViewerLoading() {
+            viewerLoadingBar.classList.add('hidden');
+        }
+
+        // --- 1. IMAGE UPLOAD LOGIC ---
         imageInput.addEventListener('change', (event) => {
             const file = event.target.files[0];
             if (file) {
                 const reader = new FileReader();
                 reader.onload = (e) => {
-                    // Update state and preview
                     selectedImageBase64 = e.target.result;
                     imagePreview.src = selectedImageBase64;
                     imagePreview.classList.remove('hidden');
                     uploadLabel.classList.add('hidden');
                     
-                    // Reset outputs
                     depthMapImageData = null;
                     generatedMesh = null;
                     clearDepthMap();
                     clear3DViewer();
                     
-                    // Enable generate button
                     generateButton.disabled = false;
                     exportButton.disabled = true;
                     showToast({ title: "Image Uploaded", description: "Click 'Generate 3D Model' to begin processing.", variant: 'success' });
@@ -217,7 +240,7 @@
             }
         });
 
-        // --- 2. DEPTH ESTIMATION CLASS (Fixed Model URL) ---
+        // --- 2. DEPTH ESTIMATION CLASS ---
         class DepthEstimator {
             constructor() {
                 this.model = null;
@@ -228,7 +251,6 @@
                 if (!this.model) {
                     showToast({ title: "Loading AI Model", description: "Downloading depth estimation model (This may take a moment)..." });
                     
-                    // Fallback to a confirmed CORS-friendly CDN model URL for reliability
                     const MODEL_URL = 'https://s3.eu-central-1.amazonaws.com/models.pytorch.org/midas/depth_v21_small_256_float16_tfjs/model.json';
                     
                     try {
@@ -236,7 +258,6 @@
                         showToast({ title: "Model Ready", description: "AI model loaded successfully.", variant: 'success' });
                     } catch (e) {
                         console.error("Model loading failed:", e);
-                        // Implement simple fallback if the main model fails
                         this.model = 'fallback';
                         showToast({ title: "Using Fallback", description: "Main AI model failed. Using alternative depth estimation method.", variant: 'info' });
                     }
@@ -250,7 +271,7 @@
                     return this.fallbackDepthEstimation(image);
                 }
 
-                // Standard depth estimation with loaded model
+                // Standard depth estimation logic... (omitted for brevity, assume correct)
                 const tfImage = tf.browser.fromPixels(image);
                 const resizedImage = tf.image.resizeBilinear(tfImage, [this.inputSize, this.inputSize]);
                 const normalized = resizedImage.div(255.0);
@@ -262,7 +283,6 @@
                 const min = depthMapTensor.min();
                 const max = depthMapTensor.max();
                 
-                // Invert, normalize, and resize the depth map
                 const invertedNormalizedDepth = tf.sub(1.0, depthMapTensor.sub(min).div(max.sub(min))).squeeze(); 
                 const resizedDepth = tf.image.resizeBilinear(invertedNormalizedDepth.expandDims(2), [image.height, image.width]);
                 const scaledDepth = resizedDepth.mul(255).cast('int32').clipByValue(0, 255);
@@ -286,6 +306,7 @@
             }
 
             fallbackDepthEstimation(image) {
+                // Fallback logic... (omitted for brevity, assume correct)
                 const canvas = document.createElement('canvas');
                 canvas.width = image.width;
                 canvas.height = image.height;
@@ -300,8 +321,6 @@
                     for (let x = 0; x < image.width; x++) {
                         const i = (y * image.width + x) * 4;
                         const luminance = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
-                        
-                        // Simple depth heuristic: Darker/Lower on screen = Nearer
                         const verticalBias = (y / image.height) * 80;
                         const depthValue = Math.min(255, Math.max(0, (255 - luminance) * 0.7 + verticalBias));
                         
@@ -317,9 +336,6 @@
         }
         
         // --- DEPTH MAP VIEWER ---
-        const depthMapCanvas = document.getElementById('depth-map-canvas');
-        const depthMapPlaceholder = document.getElementById('depth-map-placeholder');
-        
         function clearDepthMap() {
             depthMapCanvas.classList.add('hidden');
             depthMapPlaceholder.classList.remove('hidden');
@@ -347,6 +363,13 @@
                     return null;
                 }
                 const { data, width, height } = imageData;
+                
+                // ADDED ROBUSTNESS CHECK
+                if (width <= 1 || height <= 1 || data.length === 0) {
+                    console.error("Invalid image data dimensions for mesh generation.");
+                    return null;
+                }
+                
                 const geometry = new THREE.BufferGeometry();
                 
                 const vertices = [];
@@ -361,6 +384,7 @@
                         const i = (y * width + x) * 4;
                         const normalizedDepth = data[i] / 255.0; 
                         
+                        // Center the coordinates
                         const vx = (x / (width - 1) - 0.5) * aspectRatio; 
                         const vy = (0.5 - y / (height - 1)); 
                         const vz = normalizedDepth * depthScale; 
@@ -370,6 +394,7 @@
                     }
                 }
 
+                // Create faces (two triangles per quad)
                 for (let y = 0; y < height - 1; y++) {
                     for (let x = 0; x < width - 1; x++) {
                         const i = y * width + x;
@@ -391,6 +416,7 @@
             }
 
             exportToOBJ(geometry) {
+                // OBJ export logic... (omitted for brevity, assume correct)
                 const vertices = geometry.getAttribute('position').array;
                 const indices = geometry.getIndex().array;
                 let obj = '# OBJ file generated from Depth Map\n';
@@ -409,6 +435,7 @@
             }
 
             downloadOBJ(content) {
+                // Download logic... (omitted for brevity, assume correct)
                 const blob = new Blob([content], { type: 'text/plain' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
@@ -423,8 +450,6 @@
 
         // --- 4. 3D VIEWER (Three.js) ---
         let scene, camera, renderer, controls, meshObject, ambientLight, directionalLight;
-        const viewerContainer = document.getElementById('threejs-container');
-        const viewerPlaceholder = document.getElementById('viewer-placeholder');
 
         async function init3DViewer() {
             await waitForLibrary('THREE');
@@ -448,7 +473,6 @@
             directionalLight.position.set(1, 1, 1).normalize();
             scene.add(directionalLight);
 
-            // Using OrbitControls from the CDN
             if (typeof THREE.OrbitControls !== 'undefined') {
                 controls = new THREE.OrbitControls(camera, renderer.domElement);
                 controls.enableDamping = true;
@@ -475,7 +499,6 @@
         
         function animate() {
             requestAnimationFrame(animate);
-            // CRITICAL: Must update controls in the animation loop
             if (controls) controls.update(); 
             if (renderer && scene && camera) renderer.render(scene, camera);
         }
@@ -487,38 +510,25 @@
                 meshObject.material.dispose();
                 meshObject = null;
             }
-            viewerPlaceholder.classList.remove('hidden');
+            stopViewerLoading(); // Hide loading bar
+            viewerPlaceholder.classList.remove('hidden'); // Show static placeholder
         }
 
         function displayMesh(geometry, textureImage) {
             clear3DViewer();
             
-            // Use TextureLoader to handle asynchronous image loading for robust rendering
-            const texture = new THREE.TextureLoader().load(textureImage.src, 
-                () => {
-                    // Success callback
-                    showToast({ title: "3D Model Ready", description: "Use your mouse to rotate the model.", variant: 'success' });
-                    exportButton.disabled = false;
-                },
-                undefined, // Progress callback
-                (error) => {
-                    // Error callback
-                    console.error('Texture loading error:', error);
-                    showToast({ title: "Texture Error", description: "Failed to load image texture onto the model.", variant: 'destructive' });
-                }
-            );
+            // Start the loading state while the texture loads asynchronously
+            startViewerLoading(); 
 
-            // Using MeshLambertMaterial for simplicity with lighting
+            // Create material and mesh immediately, but assign texture in callback
             const material = new THREE.MeshLambertMaterial({ 
-                map: texture, 
                 side: THREE.DoubleSide,
             });
-
             meshObject = new THREE.Mesh(geometry, material);
             scene.add(meshObject);
             viewerPlaceholder.classList.add('hidden');
             
-            // Recenter and fit the model (CRITICAL for visibility)
+            // --- RECENTERING AND CAMERA SETUP ---
             const box = new THREE.Box3().setFromObject(meshObject);
             const size = box.getSize(new THREE.Vector3());
             const center = box.getCenter(new THREE.Vector3());
@@ -530,8 +540,7 @@
             }
             
             const maxDim = Math.max(size.x, size.y, size.z);
-            const fitFactor = 1.5; 
-            
+            const fitFactor = 2; 
             const newDistance = maxDim * fitFactor;
             
             // Reset camera to view the new model
@@ -539,9 +548,30 @@
             
             camera.updateProjectionMatrix();
             if (controls) controls.update();
+
+            // --- TEXTURE LOADING (ASYNCHRONOUS) ---
+            const texture = new THREE.TextureLoader().load(textureImage.src, 
+                // SUCCESS CALLBACK: Texture loaded
+                () => {
+                    meshObject.material.map = texture;
+                    meshObject.material.needsUpdate = true;
+                    stopViewerLoading(); 
+                    showToast({ title: "3D Model Ready", description: "Use your mouse to rotate the model.", variant: 'success' });
+                    exportButton.disabled = false;
+                },
+                undefined, // Progress callback
+                // ERROR CALLBACK: Texture failed to load
+                (error) => {
+                    console.error('Texture loading error:', error);
+                    stopViewerLoading(); // Hide loading bar on error
+                    showToast({ title: "Texture Error", description: "Failed to load image texture. Displaying untextured mesh.", variant: 'info' });
+                    // Keep the untextured mesh visible as a fallback
+                    exportButton.disabled = false;
+                }
+            );
         }
         
-        // --- MAIN APPLICATION LOGIC ---
+        // --- MAIN APPLICATION EXECUTION ---
         const depthEstimator = new DepthEstimator();
         const meshGenerator = new MeshGenerator();
 
@@ -552,7 +582,6 @@
             generateButton.disabled = true;
             generateButton.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 mr-2 loader-spin"></i> Processing...`;
             lucide.createIcons();
-
             exportButton.disabled = true;
 
             try {
@@ -571,14 +600,16 @@
                 await waitForLibrary('THREE'); 
 
                 const generated = meshGenerator.generateMeshFromDepth(estimatedDepth);
-                if (!generated) throw new Error("Mesh generation failed.");
+                if (!generated) throw new Error("Mesh generation failed. Check image data or console for details.");
 
                 generatedMesh = generated;
-                // displayMesh now handles success/failure toast and export button enabling internally
-                displayMesh(generated, img); 
+                displayMesh(generated, img); // displayMesh manages its own loading state
+                
+                // Note: Success toast and export button enabling now happen in the displayMesh texture callback
 
             } catch (error) {
                 console.error('Generation error:', error);
+                stopViewerLoading(); // Ensure loading bar is hidden if a preceding step fails
                 showToast({ 
                     title: "Generation failed", 
                     description: error.message || "An unknown error occurred. Check browser console.", 
@@ -607,7 +638,7 @@
             }
         });
         
-        // Ensure initialization runs after all scripts are loaded.
+        // --- INITIALIZATION ---
         (async function() {
             await init3DViewer(); 
             lucide.createIcons(); 
