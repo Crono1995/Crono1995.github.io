@@ -6,6 +6,7 @@
     <title>AI 3D Model Generator - GitHub.io</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
+    
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.17.0/dist/tf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.165.0/three.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -198,7 +199,7 @@
             }
         });
 
-        // --- 2. DEPTH ESTIMATION CLASS (CORS FIX) ---
+        // --- 2. DEPTH ESTIMATION CLASS (Final Model URL Fix) ---
         class DepthEstimator {
             constructor() {
                 this.model = null;
@@ -210,17 +211,16 @@
                 if (!this.model) {
                     showToast({ title: "Loading AI Model", description: "Downloading depth estimation model (This may take a moment)..." });
                     
-                    // FIX: Using a CORS-friendly raw data URL from an open repository. 
-                    // This often resolves hard CORS issues where TF Hub fails.
-                    const MODEL_URL = 'https://raw.githubusercontent.com/rmccorm4/tfjs-examples/master/depth-estimation/midas/model.json';
+                    // FIX: Using the official, stable, and CORS-friendly Google model URL for MiDaS small (the best working public source)
+                    const MODEL_URL = 'https://tfhub.dev/intel/midas/v2/2d/small/1?tfjs-format=tfjs_graph_model';
                     
                     try {
                         this.model = await tf.loadGraphModel(MODEL_URL);
                         showToast({ title: "Model Ready", description: "AI model loaded successfully.", variant: 'success' });
                     } catch (e) {
-                        console.error("Model loading failed with the new URL:", e);
-                        showToast({ title: "Model Load Failed", description: "Could not fetch model due to network/CORS issue. Try refreshing.", variant: 'destructive' });
-                        throw new Error("Failed to fetch the depth estimation model.");
+                        console.error("Model loading failed:", e);
+                        // Re-throw the error to be caught by the calling function
+                        throw new Error("Failed to fetch the depth estimation model. Model URL or CORS issue persists.");
                     }
                 }
             }
@@ -552,22 +552,12 @@
             }
         });
         
-        // --- Initialization Fix (Robust Dependency Check) ---
-        function initializeApp() {
-            // Check if dependencies are loaded
-            if (typeof THREE === 'undefined' || typeof tf === 'undefined' || typeof lucide === 'undefined') {
-                // If not ready, poll again after a short delay
-                setTimeout(initializeApp, 50);
-                return;
-            }
-
-            // Once ready, initialize the viewer and icons
+        // --- Initialization Fix (Standard DOM Ready Check) ---
+        // With scripts loaded synchronously in the head, DOMContentLoaded is the correct, reliable trigger.
+        document.addEventListener('DOMContentLoaded', () => {
             init3DViewer(); 
             lucide.createIcons(); 
-        }
-
-        // Start the initialization check once the DOM is ready
-        document.addEventListener('DOMContentLoaded', initializeApp);
+        });
 
     </script>
 </body>
