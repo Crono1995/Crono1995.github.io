@@ -6,7 +6,7 @@
     <title>AI 3D Model Generator (Single File)</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone@7.24.8/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/three@0.166.1/build/three.min.js"></script>
     <script src="https://unpkg.com/three@0.166.1/examples/js/controls/OrbitControls.js"></script>
@@ -18,17 +18,22 @@
         @media (prefers-color-scheme: dark) {
             body { background-color: #1f2937; color: white; }
         }
+        /* Ensure the main container has proper height */
+        .min-h-screen { min-height: 100vh; }
     </style>
 </head>
 <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
 
-    <script type="text/babel" data-type="module">
+    <script type="text/babel">
         const { useState, useCallback, useEffect, useRef } = React;
         const ReactDOM = window.ReactDOM;
         const THREE = window.THREE;
         const { Box, Download, Loader2, Upload, X } = window.lucide;
+        // Ensure OrbitControls is correctly referenced from the global THREE object
+        const OrbitControls = window.THREE.OrbitControls;
+
 
         // --- UTILITIES & MOCK UI ---
         
@@ -85,7 +90,7 @@
             }, []);
 
             if (!currentToast) return null;
-            const baseClasses = "fixed bottom-4 right-4 p-4 rounded-md shadow-xl text-white max-w-sm transition-opacity duration-300";
+            const baseClasses = "fixed bottom-4 right-4 p-4 rounded-md shadow-xl text-white max-w-sm transition-opacity duration-300 z-50";
             const variantClasses = currentToast.variant === "destructive" ? "bg-red-600 border border-red-700" : "bg-gray-800 border border-gray-700";
 
             return (
@@ -98,7 +103,7 @@
         const useToast = () => ({ toast: (props) => ToastState.publish(props) });
 
 
-        // --- LIBRARY/UTILITY CLASSES ---
+        // --- LIBRARY/UTILITY CLASSES (Mocked) ---
 
         class DepthEstimator {
             async estimateDepth(img) {
@@ -168,7 +173,8 @@
                 }
 
                 geometry.setIndex(indices);
-                geometry.setAttribute('position', new THREE.Float34BufferAttribute(new Float32Array(vertices), 3));
+                // Use THREE.Float32BufferAttribute constructor for arrays
+                geometry.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(vertices), 3));
                 geometry.setAttribute('uv', new THREE.Float32BufferAttribute(new Float32Array(uvs), 2));
 
                 geometry.computeVertexNormals();
@@ -314,7 +320,8 @@
                 const height = mountRef.current.clientHeight;
 
                 const scene = new THREE.Scene();
-                scene.background = new THREE.Color(0xf0f0f0);
+                // FIX: Set distinguishable background color
+                scene.background = new THREE.Color(0xdddddd); 
                 sceneRef.current = scene;
 
                 const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
@@ -331,7 +338,8 @@
                 directionalLight.position.set(1, 1, 1).normalize();
                 scene.add(directionalLight);
 
-                const controls = new THREE.OrbitControls(camera, renderer.domElement);
+                // FIX: Use the globally available OrbitControls class
+                const controls = new OrbitControls(camera, renderer.domElement); 
                 controls.enableDamping = true; controls.dampingFactor = 0.25; controls.minDistance = 0.5; controlsRef.current = controls;
 
                 const handleResize = () => {
