@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 3D Model Generator - GitHub Pages</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0/dist/tf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lucide-js@0.300.0/dist/umd/lucide.min.js"></script>
+
+    <style>
+        :root {
+            --background: 222.2 84% 4.9%;
+            --foreground: 210 20% 98%;
+            --card: 222.2 84% 4.9%;
+            --card-foreground: 210 20% 98%;
+            --primary: 217.2 91.2% 59.8%;
+            --primary-foreground: 210 20% 98%;
+            --muted: 217.2 32.4% 17.5%;
+            --muted-foreground: 215 20.2% 65.1%;
+            --border: 217.2 32.4% 17.5%;
+        }
+        .dark {
+            color-scheme: dark;
+        }
+        body {
+            background-color: hsl(var(--background));
+            color: hsl(var(--foreground));
+        }
+        .card {
+            background-color: hsl(var(--card));
+            border: 1px solid hsl(var(--border));
+        }
+        .text-primary { color: hsl(var(--primary)); }
+        .border-primary\/30 { border-color: hsla(var(--primary) / 0.3); }
+        .hover\:bg-primary\/10:hover { background-color: hsla(var(--primary) / 0.1); }
+        .bg-primary\/50 { background-color: hsla(var(--primary) / 0.5); }
+
+        /* Custom Gradients/Utility */
+        .gradient-primary {
+            background: linear-gradient(90deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.8) 100%);
+            color: white;
+        }
+        .text-gradient {
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            background-image: linear-gradient(90deg, hsl(var(--primary)) 30%, hsl(var(--foreground)) 100%);
+        }
+        /* Custom Toast/Utilities */
+        #toast-container {
+            position: fixed;
+            bottom: 1rem;
+            right: 1rem;
+            z-index: 1000;
+        }
+        .toast {
+            padding: 0.75rem 1.25rem;
+            margin-top: 0.5rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+            transition: opacity 0.3s ease-in-out;
+        }
+        .toast-default { background-color: #10b981; color: white; } /* Green */
+        .toast-destructive { background-color: #ef4444; color: white; } /* Red */
+    </style>
+</head>
+<body class="dark">
+    <div id="app" class="min-h-screen">
+        <div class="max-w-7xl mx-auto py-8 px-4">
+            <div class="text-center mb-12">
+                <div class="flex items-center justify-center gap-3 mb-4">
+                    <div id="icon-box" class="w-10 h-10 text-primary"></div>
+                    <h1 class="text-5xl font-bold text-gradient">
+                        AI 3D Model Generator
+                    </h1>
+                </div>
+                <p class="text-muted-foreground text-lg">
+                    Transform 2D images into 3D models using AI • 100% Client-Side • No Server Required
+                </p>
+            </div>
+
+            <div class="grid lg:grid-cols-2 gap-6 mb-8">
+                <div class="card p-6 space-y-6 rounded-lg">
+                    <div>
+                        <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
+                            <span class="text-primary">1.</span> Upload Image
+                        </h2>
+                        <div id="image-upload-container">
+                            </div>
+                    </div>
+
+                    <div>
+                        <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
+                            <span class="text-primary">2.</span> Depth Map
+                        </h2>
+                        <div id="depth-map-viewer-container" class="relative">
+                            <canvas id="depth-map-canvas" class="w-full h-auto rounded-md border border-border" style="max-height: 400px;"></canvas>
+                            <div id="depth-map-placeholder" class="w-full bg-muted flex items-center justify-center rounded-md border border-dashed border-border" style="height: 400px;">
+                                <span class="text-muted-foreground">Depth map will appear here</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card p-6 space-y-6 rounded-lg">
+                    <div>
+                        <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
+                            <span class="text-primary">3.</span> 3D Model Viewer
+                        </h2>
+                        <div id="viewer-3d-container" class="w-full bg-black/50 rounded-md" style="height: 450px;">
+                            </div>
+                    </div>
+
+                    <div class="space-y-3">
+                        <button id="generate-btn" class="w-full h-12 text-base gradient-primary hover:opacity-90 transition-opacity flex items-center justify-center rounded-md" disabled>
+                            <div id="generate-icon-box" class="w-5 h-5 mr-2"></div>
+                            <span id="generate-text">Generate 3D Model</span>
+                        </button>
+
+                        <button id="export-btn" class="w-full h-12 text-base border border-primary/30 hover:bg-primary/10 transition-colors flex items-center justify-center rounded-md" disabled>
+                            <div id="download-icon-box" class="w-5 h-5 mr-2"></div>
+                            Download OBJ
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-4">
+                <div class="card p-4 bg-card/50 border-primary/20 rounded-lg">
+                    <h3 class="font-semibold text-primary mb-2">🔒 Privacy First</h3>
+                    <p class="text-sm text-muted-foreground">
+                        All processing happens locally in your browser. No data is uploaded to any server.
+                    </p>
+                </div>
+                <div class="card p-4 bg-card/50 border-primary/20 rounded-lg">
+                    <h3 class="font-semibold text-primary mb-2">⚡ WebGL Accelerated</h3>
+                    <p class="text-sm text-muted-foreground">
+                        Powered by **TensorFlow.js** with WebGL backend for fast performance.
+                    </p>
+                </div>
+                <div class="card p-4 bg-card/50 border-primary/20 rounded-lg">
+                    <h3 class="font-semibold text-primary mb-2">📦 Export Ready</h3>
+                    <p class="text-sm text-muted-foreground">
+                        Export to OBJ format compatible with Blender, Unity, and other 3D tools.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="toast-container"></div>
+
+    <script>
+        // Utility Functions (Toast and Icons)
+        const generateUUID = () => crypto.randomUUID();
+
+        const toast = ({ title, description, variant = 'default' }) => {
+            const container = document.getElementById('toast-container');
+            const element = document.createElement('div');
+            element.className = `toast toast-${variant} opacity-0`;
+            element.innerHTML = `<p class="font-semibold">${title}</p><p class="text-sm">${description}</p>`;
+            container.appendChild(element);
+
+            // Animate in
+            setTimeout(() => { element.classList.remove('opacity-0'); }, 10);
+            
+            // Animate out and remove
+            setTimeout(() => {
+                element.classList.add('opacity-0');
+                element.addEventListener('transitionend', () => element.remove());
+            }, 5000);
+        };
+
+        const renderIcon = (name, targetId) => {
+            const target = document.getElementById(targetId);
+            if (target && lucide[name]) {
+                target.innerHTML = lucide[name].toSvg({ class: 'w-full h-full' });
+            }
+        };
+
+        // --- GLOBAL STATE ---
+        let state = {
+            selectedImage: null,
+            depthMap: null,
+            mesh: null,
+            isProcessing: false,
+        };
+
+        // --- 2. DepthEstimator Class (Simulated TF.js Dependency) ---
+        class DepthEstimator {
+            constructor() {
+                this.model = null;
+                this.MODEL_URL = 'https://tfhub.dev/intel/midas/v2/2?tfjs-format=url'; // A generic large model placeholder
+            }
+
+            async loadModel() {
+                if (this.model) return;
+                
+                toast({
+                    title: "Loading AI Model",
+                    description: "Downloading depth estimation model (~25MB)... This may take a moment.",
+                });
+
+                // Set TFJS backend to WebGL for performance
+                await tf.setBackend('webgl');
+                this.model = await tf.loadGraphModel(this.MODEL_URL);
+                console.log("AI Model loaded successfully.");
+                toast({
+                    title: "Model Ready",
+                    description: "AI model loaded. You can now generate the mesh.",
+                });
+            }
+
+            async estimateDepth(img) {
+                if (!this.model) {
+                    await this.loadModel();
+                }
+
+                // --- Depth Estimation Logic (Simplified for a placeholder model) ---
+                const inputTensor = tf.browser.fromPixels(img)
+                    .toFloat()
+                    .resizeNearestNeighbor([256, 256]) // Resize to a common input size
+                    .div(255.0)
+                    .expandDims();
+                
+                const prediction = this.model.predict(inputTensor);
+                const depthTensor = prediction.squeeze().mul(255).toInt();
+                const depthData = await depthTensor.array();
+
+                inputTensor.dispose();
+                prediction.dispose();
+                depthTensor.dispose();
+
+                // Create ImageData from the depth data array
+                const canvas = document.createElement('canvas');
+                canvas.width = 256;
+                canvas.height = 256;
+                const ctx = canvas.getContext('2d');
+                const imageData = ctx.createImageData(256, 256);
+                const data = imageData.data;
+
+                for (let i = 0; i < depthData.length; i++) {
+                    const depthValue = depthData[i];
+                    const idx = i * 4;
+                    // Grayscale representation (R=G=B)
+                    data[idx] = depthValue;
+                    data[idx + 1] = depthValue;
+                    data[idx + 2] = depthValue;
+                    data[idx + 3] = 255; // Alpha
+                }
+                
+                return imageData;
+            }
+        }
+
+        // --- 3. MeshGenerator Class (FIXED for Broken Mesh) ---
+        class MeshGenerator {
+            constructor() {
+                this.Z_SCALE_FACTOR = 1.0; // Control the depth extrusion strength
+            }
+
+            generateMeshFromDepth(imageData) {
+                const width = imageData.width;
+                const height = imageData.height;
+                const data = imageData.data;
+                
+                const vertices = [];
+                const uvs = [];
+                const indices = [];
+
+                // 1. Generate Vertices and UVs
+                for (let y = 0; y < height; y++) {
+                    for (let x = 0; x < width; x++) {
+                        const i = (y * width + x) * 4;
+                        // Use the Red channel (which is equal to G and B for grayscale)
+                        const depthValue = data[i];
+
+                        // FIX: Normalize and Invert Depth (darker=farther, lighter=closer)
+                        const normalizedDepth = depthValue / 255.0; 
+                        // Invert: 1.0 - normalizedDepth. Near objects (high depthValue) get higher Z.
+                        const z = (1.0 - normalizedDepth) * this.Z_SCALE_FACTOR; 
+
+                        // X and Y normalized to range [-0.5, 0.5] for centering
+                        const vx = (x / width) - 0.5;
+                        const vy = (1.0 - (y / height)) - 0.5; // Invert Y for correct coordinate system
+
+                        // Position: (x, y, z)
+                        vertices.push(vx, vy, z); 
+
+                        // UVs (Texture coordinates from 0 to 1)
+                        uvs.push(x / (width - 1), 1.0 - y / (height - 1));
+                    }
+                }
+
+                // 2. Generate Indices (Faces/Triangles)
+                for (let y = 0; y < height - 1; y++) {
+                    for (let x = 0; x < width - 1; x++) {
+                        const a = x + y * width;
+                        const b = x + 1 + y * width;
+                        const c = x + 1 + (y + 1) * width;
+                        const d = x + (y + 1) * width;
+
+                        // Triangle 1: a, b, d (Top-left triangle of the quad)
+                        indices.push(a, b, d);
+                        // Triangle 2: b, c, d (Bottom-right triangle of the quad)
+                        indices.push(b, c, d);
+                    }
+                }
+
+                // 3. Create Three.js Geometry
+                const geometry = new THREE.BufferGeometry();
+                geometry.setAttribute('position', new THREE.Float3BufferAttribute(vertices, 3));
+                geometry.setAttribute('uv', new THREE.Float3BufferAttribute(uvs, 2));
+                geometry.setIndex(indices);
+                geometry.computeVertexNormals(); // Required for lighting
+
+                return geometry;
+            }
+
+            exportToOBJ(geometry) {
+                // Simplified OBJ exporter
+                let obj = '# OBJ File Generated from AI 3D Model Generator\n';
+                const positions = geometry.attributes.position.array;
+                const uvs = geometry.attributes.uv.array;
+                const indices = geometry.index.array;
+                
+                // Vertices
+                for (let i = 0; i < positions.length; i += 3) {
+                    obj += `v ${positions[i].toFixed(6)} ${positions[i + 1].toFixed(6)} ${positions[i + 2].toFixed(6)}\n`;
+                }
+
+                // UVs
+                for (let i = 0; i < uvs.length; i += 2) {
+                    obj += `vt ${uvs[i].toFixed(6)} ${uvs[i + 1].toFixed(6)}\n`;
+                }
+
+                // Faces (using 1-based indexing)
+                obj += 'usemtl texture\n';
+                for (let i = 0; i < indices.length; i += 3) {
+                    // OBJ format: f v/vt/vn v/vt/vn v/vt/vn
+                    const i1 = indices[i] + 1;
+                    const i2 = indices[i + 1] + 1;
+                    const i3 = indices[i + 2] + 1;
+                    obj += `f ${i1}/${i1} ${i2}/${i2} ${i3}/${i3}\n`;
+                }
+                return obj;
+            }
+
+            downloadOBJ(objContent) {
+                const blob = new Blob([objContent], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = '3d_model.obj';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+        }
+
+        // --- 4. Three.js Renderer (Viewer3D) ---
+        class Viewer3D {
+            constructor(containerId, initialMesh = null) {
+                this.container = document.getElementById(containerId);
+                this.scene = new THREE.Scene();
+                this.camera = new THREE.PerspectiveCamera(75, this.container.clientWidth / this.container.clientHeight, 0.1, 10);
+                this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+                this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
+                this.container.appendChild(this.renderer.domElement);
+
+                this.camera.position.z = 1.5;
+                this.camera.position.y = 0;
+
+                // Lighting
+                this.scene.add(new THREE.AmbientLight(0x404040, 2));
+                const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
+                directionalLight.position.set(5, 5, 5).normalize();
+                this.scene.add(directionalLight);
+
+                this.meshObject = null;
+                if (initialMesh) {
+                    this.updateMesh(initialMesh);
+                }
+
+                // Rotation properties
+                this.isDragging = false;
+                this.previousMousePosition = { x: 0, y: 0 };
+                this.rotation = new THREE.Euler(0, 0, 0, 'YXZ');
+                this.addControls();
+                this.animate();
+
+                window.addEventListener('resize', this.onWindowResize.bind(this));
+            }
+
+            onWindowResize() {
+                this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
+                this.camera.aspect = this.container.clientWidth / this.container.clientHeight;
+                this.camera.updateProjectionMatrix();
+            }
+
+            updateMesh(geometry, textureUrl) {
+                // Remove old mesh
+                if (this.meshObject) {
+                    this.scene.remove(this.meshObject);
+                    this.meshObject.geometry.dispose();
+                    this.meshObject.material.dispose();
+                }
+
+                const material = new THREE.MeshPhysicalMaterial({
+                    map: textureUrl ? new THREE.TextureLoader().load(textureUrl) : null,
+                    color: 0xcccccc,
+                    side: THREE.DoubleSide,
+                    wireframe: false,
+                    roughness: 0.5,
+                    metalness: 0.2,
+                });
+
+                this.meshObject = new THREE.Mesh(geometry, material);
+                // Center the mesh in the scene
+                this.meshObject.rotation.copy(this.rotation); // Apply current rotation
+                this.scene.add(this.meshObject);
+            }
+
+            addControls() {
+                const onMouseDown = (e) => {
+                    this.isDragging = true;
+                    this.previousMousePosition.x = e.clientX;
+                    this.previousMousePosition.y = e.clientY;
+                };
+
+                const onMouseMove = (e) => {
+                    if (!this.isDragging || !this.meshObject) return;
+
+                    const deltaX = e.clientX - this.previousMousePosition.x;
+                    const deltaY = e.clientY - this.previousMousePosition.y;
+
+                    // Rotate the mesh around the Y and X axes
+                    this.rotation.y += deltaX * 0.01;
+                    this.rotation.x += deltaY * 0.01;
+
+                    // Clamp X rotation to prevent flipping
+                    this.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.rotation.x));
+                    
+                    this.meshObject.rotation.copy(this.rotation);
+
+                    this.previousMousePosition.x = e.clientX;
+                    this.previousMousePosition.y = e.clientY;
+                };
+
+                const onMouseUp = () => {
+                    this.isDragging = false;
+                };
+
+                this.container.addEventListener('mousedown', onMouseDown);
+                this.container.addEventListener('mousemove', onMouseMove);
+                window.addEventListener('mouseup', onMouseUp);
+                
+                // Add touch support (simplified)
+                this.container.addEventListener('touchstart', (e) => onMouseDown(e.touches[0]));
+                this.container.addEventListener('touchmove', (e) => onMouseMove(e.touches[0]));
+                window.addEventListener('touchend', onMouseUp);
+            }
+
+            animate() {
+                requestAnimationFrame(this.animate.bind(this));
+                this.renderer.render(this.scene, this.camera);
+            }
+        }
+
+
+        // --- 5. UI Rendering and State Management ---
+        const depthEstimator = new DepthEstimator();
+        const meshGenerator = new MeshGenerator();
+        let viewer3D = null;
+
+
+        const renderUI = () => {
+            const { selectedImage, depthMap, mesh, isProcessing } = state;
+            
+            // Image Upload Container
+            const uploadContainer = document.getElementById('image-upload-container');
+            const placeholderHtml = `
+                <div class="border-2 border-dashed border-border p-6 rounded-lg text-center cursor-pointer hover:border-primary/50 transition-colors">
+                    <label for="file-upload" class="cursor-pointer block text-muted-foreground">
+                        Click to upload or drag & drop a single image
+                        <input id="file-upload" type="file" accept="image/*" class="hidden" onchange="handleFileChange(event)">
+                    </label>
+                </div>`;
+            const imageHtml = selectedImage ? 
+                `<img src="${selectedImage}" class="w-full h-auto object-contain rounded-md border border-border" style="max-height: 400px;">` :
+                placeholderHtml;
+
+            uploadContainer.innerHTML = imageHtml;
+            if (!selectedImage) {
+                 document.getElementById('file-upload').onchange = handleFileChange;
+            }
+            
+            // Depth Map Viewer
+            const depthCanvas = document.getElementById('depth-map-canvas');
+            const depthPlaceholder = document.getElementById('depth-map-placeholder');
+            if (depthMap) {
+                depthPlaceholder.classList.add('hidden');
+                depthCanvas.classList.remove('hidden');
+                depthCanvas.width = depthMap.width;
+                depthCanvas.height = depthMap.height;
+                depthCanvas.getContext('2d').putImageData(depthMap, 0, 0);
+            } else {
+                depthPlaceholder.classList.remove('hidden');
+                depthCanvas.classList.add('hidden');
+            }
+
+            // 3D Viewer
+            if (mesh && viewer3D) {
+                viewer3D.updateMesh(mesh, selectedImage);
+            }
+            
+            // Buttons
+            const generateBtn = document.getElementById('generate-btn');
+            const exportBtn = document.getElementById('export-btn');
+            const generateText = document.getElementById('generate-text');
+            const generateIconBox = document.getElementById('generate-icon-box');
+            
+            generateBtn.disabled = !selectedImage || isProcessing;
+            exportBtn.disabled = !mesh || isProcessing;
+
+            if (isProcessing) {
+                renderIcon('Loader2', 'generate-icon-box');
+                generateIconBox.classList.add('animate-spin');
+                generateText.textContent = "Processing...";
+            } else {
+                renderIcon('Box', 'generate-icon-box');
+                generateIconBox.classList.remove('animate-spin');
+                generateText.textContent = "Generate 3D Model";
+            }
+            
+            renderIcon('Download', 'download-icon-box');
+        };
+
+        const updateState = (newState) => {
+            state = { ...state, ...newState };
+            renderUI();
+        };
+
+        // --- 6. Event Handlers ---
+
+        const handleFileChange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                updateState({
+                    selectedImage: e.target.result,
+                    depthMap: null,
+                    mesh: null,
+                });
+            };
+            reader.readAsDataURL(file);
+        };
+
+        const handleGenerate = async () => {
+            if (!state.selectedImage || state.isProcessing) return;
+
+            updateState({ isProcessing: true });
+
+            try {
+                // 1. Load image
+                const img = new Image();
+                img.src = state.selectedImage;
+                await new Promise((resolve) => { img.onload = resolve; });
+
+                // 2. Estimate depth
+                toast({ title: "Processing image", description: "Estimating depth map..." });
+                const estimatedDepth = await depthEstimator.estimateDepth(img);
+                
+                updateState({ depthMap: estimatedDepth });
+
+                // 3. Generate mesh
+                toast({ title: "Generating 3D model", description: "Creating mesh from depth data..." });
+                const generatedMesh = meshGenerator.generateMeshFromDepth(estimatedDepth);
+                
+                updateState({ mesh: generatedMesh });
+                
+                toast({ title: "Success!", description: "3D model generated successfully" });
+            } catch (error) {
+                console.error('Generation error:', error);
+                toast({
+                    title: "Generation failed",
+                    description: error instanceof Error ? error.message : "An unknown error occurred. Check the console for details.",
+                    variant: "destructive",
+                });
+            } finally {
+                updateState({ isProcessing: false });
+            }
+        };
+
+        const handleExport = () => {
+            if (!state.mesh) {
+                toast({ title: "No model to export", description: "Please generate a 3D model first", variant: "destructive" });
+                return;
+            }
+
+            try {
+                const objContent = meshGenerator.exportToOBJ(state.mesh);
+                meshGenerator.downloadOBJ(objContent);
+                
+                toast({ title: "Export successful", description: "OBJ file downloaded" });
+            } catch (error) {
+                toast({ title: "Export failed", description: "Failed to export the model", variant: "destructive" });
+            }
+        };
+
+
+        // --- 7. Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Render initial icons
+            renderIcon('Box', 'icon-box');
+            
+            // Initialize 3D Viewer
+            viewer3D = new Viewer3D('viewer-3d-container');
+
+            // Attach listeners to buttons
+            document.getElementById('generate-btn').addEventListener('click', handleGenerate);
+            document.getElementById('export-btn').addEventListener('click', handleExport);
+            
+            // Initial render
+            renderUI();
+            
+            // Pre-load the AI model to speed up first processing
+            depthEstimator.loadModel();
+        });
+    </script>
+</body>
+</html>
