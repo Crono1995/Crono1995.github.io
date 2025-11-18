@@ -479,22 +479,24 @@
         const renderUI = () => {
             const { selectedImage, depthMap, mesh, isProcessing } = state;
             
-            // Image Upload Container
+			// Image Upload Container
             const uploadContainer = document.getElementById('image-upload-container');
-            const placeholderHtml = `
-                <div class="border-2 border-dashed border-border p-6 rounded-lg text-center cursor-pointer hover:border-primary/50 transition-colors">
-                    <label for="file-upload" class="cursor-pointer block text-muted-foreground">
-                        Click to upload or drag & drop a single image
-                        <input id="file-upload" type="file" accept="image/*" class="hidden" onchange="handleFileChange(event)">
-                    </label>
-                </div>`;
-            const imageHtml = selectedImage ? 
-                `<img src="${selectedImage}" class="w-full h-auto object-contain rounded-md border border-border" style="max-height: 400px;">` :
-                placeholderHtml;
-
-            uploadContainer.innerHTML = imageHtml;
-            if (!selectedImage) {
-                 document.getElementById('file-upload').onchange = handleFileChange;
+            
+            // --- FIX START ---
+            // If an image is selected, show the image. Otherwise, show the upload placeholder.
+            if (selectedImage) {
+                uploadContainer.innerHTML = `<img src="${selectedImage}" class="w-full h-auto object-contain rounded-md border border-border" style="max-height: 400px;">`;
+            } else {
+                uploadContainer.innerHTML = `
+                    <div class="border-2 border-dashed border-border p-6 rounded-lg text-center cursor-pointer hover:border-primary/50 transition-colors">
+                        <label for="file-upload" class="cursor-pointer block text-muted-foreground">
+                            Click to upload or drag & drop a single image
+                            <input id="file-upload" type="file" accept="image/*" class="hidden">
+                        </label>
+                    </div>`;
+                
+                // CRITICAL FIX: After rendering the new element, attach the listener.
+                document.getElementById('file-upload').addEventListener('change', handleFileChange);
             }
             
             // Depth Map Viewer
