@@ -11,7 +11,7 @@
     <script defer src="https://unpkg.com/lucide@latest"></script>
     
     <style>
-        /* ... your custom CSS styles ... */
+        /* Custom styles */
         .text-gradient {
             background-image: linear-gradient(45deg, #10b981, #3b82f6);
             -webkit-background-clip: text;
@@ -75,7 +75,7 @@
                             <span class="text-[#3b82f6]">1.</span> Upload Image
                         </h2>
                         <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-[#3b82f6] transition cursor-pointer">
-                            <input type="file" id="image-upload-input" accept="image/*" class="hidden">
+                            <input type="file" id="image-upload-input" accept="image/*" class="hidden"> 
                             <label for="image-upload-input" id="upload-label" class="block cursor-pointer">
                                 <i data-lucide="image" class="w-8 h-8 mx-auto text-gray-400 mb-2"></i>
                                 <p class="text-sm text-gray-600">Click to upload or drag and drop</p>
@@ -174,27 +174,32 @@
         }
 
         // --- 1. IMAGE UPLOAD LOGIC ---
+        // Get DOM elements
         const imageInput = document.getElementById('image-upload-input');
         const imagePreview = document.getElementById('selected-image-preview');
         const uploadLabel = document.getElementById('upload-label');
         const generateButton = document.getElementById('generate-button');
         const exportButton = document.getElementById('export-button');
 
+        // Listener for file selection
         imageInput.addEventListener('change', (event) => {
             const file = event.target.files[0];
             if (file) {
                 const reader = new FileReader();
                 reader.onload = (e) => {
+                    // Update global state and UI
                     selectedImageBase64 = e.target.result;
                     imagePreview.src = selectedImageBase64;
                     imagePreview.classList.remove('hidden');
                     uploadLabel.classList.add('hidden');
                     
+                    // Reset generated content
                     depthMapImageData = null;
                     generatedMesh = null;
                     clearDepthMap();
                     clear3DViewer();
                     
+                    // Enable the main button
                     generateButton.disabled = false;
                     exportButton.disabled = true;
                 };
@@ -206,7 +211,7 @@
         class DepthEstimator {
             constructor() {
                 this.model = null;
-                // Updated input size to match the Depth-Anything-Small model
+                // Input size for the Depth-Anything-Small model
                 this.inputSize = 518; 
             }
 
@@ -214,7 +219,7 @@
                 if (!this.model) {
                     showToast({ title: "Loading AI Model", description: "Downloading depth estimation model (This may take a moment)..." });
                     
-                    // FIX 2: Use a model URL that typically does NOT have CORS issues on static sites
+                    // FIX: Use a model URL that typically does NOT have CORS issues on static sites
                     const MODEL_URL = 'https://huggingface.co/spaces/Float11/depth-anything-tfjs/resolve/main/depth-anything-small-518/model.json';
                     
                     this.model = await tf.loadGraphModel(MODEL_URL);
@@ -226,24 +231,24 @@
             async estimateDepth(image) {
                 await this.loadModel();
 
-                // 1. Preprocess: Resize and Normalize
+                // 1. Preprocess
                 const tfImage = tf.browser.fromPixels(image);
                 const resizedImage = tf.image.resizeBilinear(tfImage, [this.inputSize, this.inputSize]);
                 const normalized = resizedImage.div(255.0);
                 const batched = normalized.expandDims(0);
 
-                // 2. Predict Depth Map
+                // 2. Predict
                 const outputTensor = await this.model.predict(batched);
                 let depthMapTensor = outputTensor;
 
-                // 3. Postprocess: Rescale to original image size and convert to ImageData
+                // 3. Postprocess
                 const min = depthMapTensor.min();
                 const max = depthMapTensor.max();
                 
-                // Invert and normalize depth map
+                // Invert and normalize depth map for 3D extrusion
                 const invertedNormalizedDepth = tf.sub(1.0, depthMapTensor.sub(min).div(max.sub(min))).squeeze(); 
                 
-                // Resize back to original image dimensions for accurate mesh generation
+                // Resize back to original image dimensions
                 const resizedDepth = tf.image.resizeBilinear(invertedNormalizedDepth.expandDims(2), [image.height, image.width]);
                 const scaledDepth = resizedDepth.mul(255).cast('int32').clipByValue(0, 255);
                 
@@ -297,7 +302,7 @@
             depthMapPlaceholder.classList.add('hidden');
         }
 
-        // --- 3. MESH GENERATOR ---
+        // --- 3. MESH GENERATOR (Fixed Geometry) ---
         class MeshGenerator {
             generateMeshFromDepth(imageData) {
                 const { data, width, height } = imageData;
@@ -353,6 +358,7 @@
                 return geometry;
             }
 
+            // ... Export functions remain the same ...
             exportToOBJ(geometry) {
                 const vertices = geometry.getAttribute('position').array;
                 const indices = geometry.getIndex().array;
@@ -394,7 +400,6 @@
         function init3DViewer() {
             if (scene) return; 
 
-            // FIX 1: THREE is guaranteed to be defined here due to script defer loading
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0xf0f0f0); 
 
@@ -465,6 +470,7 @@
             scene.add(meshObject);
             viewerPlaceholder.classList.add('hidden');
             
+            // Fit model to view
             const box = new THREE.Box3().setFromObject(meshObject);
             const size = box.getSize(new THREE.Vector3());
             const center = box.getCenter(new THREE.Vector3());
