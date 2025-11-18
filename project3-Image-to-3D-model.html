@@ -10,15 +10,15 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/three@0.166.1/build/three.min.js"></script>
     <script src="https://unpkg.com/three@0.166.1/examples/js/controls/OrbitControls.js"></script>
-    <script src="https://unpkg.com/lucide-react@0.407.0/dist/umd/lucide-react.min.js"></script>
+    
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script> 
     
     <style>
-        /* Simple dark/light mode support */
+        /* ... CSS Styles ... */
         body { background-color: white; color: black; }
         @media (prefers-color-scheme: dark) {
             body { background-color: #1f2937; color: white; }
         }
-        /* Ensure the main container has proper height */
         .min-h-screen { min-height: 100vh; }
     </style>
 </head>
@@ -30,14 +30,27 @@
         const { useState, useCallback, useEffect, useRef } = React;
         const ReactDOM = window.ReactDOM;
         const THREE = window.THREE;
-        const { Box, Download, Loader2, Upload, X } = window.lucide;
-        // Ensure OrbitControls is correctly referenced from the global THREE object
         const OrbitControls = window.THREE.OrbitControls;
-
-
+        
+        // FIX: Create simple React wrappers for Lucide icons 
+        // We now use the global 'lucide' object provided by the lucide.js CDN.
+        const createIcon = (IconFunction) => ({ className, ...props }) => (
+            <span 
+                className={className} 
+                dangerouslySetInnerHTML={{ __html: IconFunction().toSvg({ class: className, ...props }) }} 
+            />
+        );
+        
+        // Map the icons used in the app to simple React components
+        const Box = createIcon(lucide.Box);
+        const Download = createIcon(lucide.Download);
+        const Loader2 = createIcon(lucide.Loader2);
+        const Upload = createIcon(lucide.Upload);
+        const X = createIcon(lucide.X);
+        
         // --- UTILITIES & MOCK UI ---
         
-        // Tailwind utility
+        // ... (rest of the utility functions like cn, Card, Button, useToast, MockToastContainer remain the same) ...
         const cn = (...classes) => classes.filter(Boolean).join(' ');
 
         // Mock Shadcn Components
@@ -173,7 +186,6 @@
                 }
 
                 geometry.setIndex(indices);
-                // Use THREE.Float32BufferAttribute constructor for arrays
                 geometry.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(vertices), 3));
                 geometry.setAttribute('uv', new THREE.Float32BufferAttribute(new Float32Array(uvs), 2));
 
@@ -320,7 +332,6 @@
                 const height = mountRef.current.clientHeight;
 
                 const scene = new THREE.Scene();
-                // FIX: Set distinguishable background color
                 scene.background = new THREE.Color(0xdddddd); 
                 sceneRef.current = scene;
 
@@ -338,7 +349,6 @@
                 directionalLight.position.set(1, 1, 1).normalize();
                 scene.add(directionalLight);
 
-                // FIX: Use the globally available OrbitControls class
                 const controls = new OrbitControls(camera, renderer.domElement); 
                 controls.enableDamping = true; controls.dampingFactor = 0.25; controls.minDistance = 0.5; controlsRef.current = controls;
 
