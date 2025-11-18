@@ -6,13 +6,12 @@
     <title>AI 3D Model Generator - GitHub.io</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.165.0/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.17.0/dist/tf.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.165.0/examples/js/controls/OrbitControls.js"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.17.0/dist/tf.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.165.0/three.min.js"></script>
+    <script defer src="https://unpkg.com/lucide@latest"></script>
     
     <style>
-        /* Custom styles based on the React components' appearance */
+        /* ... your custom CSS styles ... */
         .text-gradient {
             background-image: linear-gradient(45deg, #10b981, #3b82f6);
             -webkit-background-clip: text;
@@ -35,7 +34,6 @@
         .min-h-screen { min-height: 100vh; }
         .loader-spin { animation: spin 1s linear infinite; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
-        /* Toast Notification Styling */
         #toast-container {
             position: fixed;
             top: 1rem;
@@ -145,6 +143,8 @@
             </div>
         </div>
     </div>
+    
+    <script defer src="https://cdn.jsdelivr.net/npm/three@0.165.0/examples/js/controls/OrbitControls.js"></script>
 
     <script>
         // Initialize Lucide Icons
@@ -173,7 +173,7 @@
             }, 5000);
         }
 
-        // --- 1. IMAGE UPLOAD FIX (Vanilla JS) ---
+        // --- 1. IMAGE UPLOAD LOGIC ---
         const imageInput = document.getElementById('image-upload-input');
         const imagePreview = document.getElementById('selected-image-preview');
         const uploadLabel = document.getElementById('upload-label');
@@ -190,13 +190,11 @@
                     imagePreview.classList.remove('hidden');
                     uploadLabel.classList.add('hidden');
                     
-                    // Reset processing state
                     depthMapImageData = null;
                     generatedMesh = null;
                     clearDepthMap();
                     clear3DViewer();
                     
-                    // Enable Generate Button
                     generateButton.disabled = false;
                     exportButton.disabled = true;
                 };
@@ -204,22 +202,23 @@
             }
         });
 
-        // --- 2. DEPTH ESTIMATION CLASS (Using MiDaS v2_lite fix) ---
+        // --- 2. DEPTH ESTIMATION CLASS (Fixed Model Source) ---
         class DepthEstimator {
             constructor() {
                 this.model = null;
-                this.inputSize = 256; // Default for v2_lite
+                // Updated input size to match the Depth-Anything-Small model
+                this.inputSize = 518; 
             }
 
             async loadModel() {
                 if (!this.model) {
-                    showToast({ title: "Loading AI Model", description: "Downloading depth estimation model (first time may take a moment)..." });
+                    showToast({ title: "Loading AI Model", description: "Downloading depth estimation model (This may take a moment)..." });
                     
-                    // FIX: Use specific, stable URL for MiDaS v2_lite
-                    const MODEL_URL = 'https://tfhub.dev/intel/tfjs-model/midas/v2_lite/1/default/1';
+                    // FIX 2: Use a model URL that typically does NOT have CORS issues on static sites
+                    const MODEL_URL = 'https://huggingface.co/spaces/Float11/depth-anything-tfjs/resolve/main/depth-anything-small-518/model.json';
                     
-                    this.model = await tf.loadGraphModel(MODEL_URL, { fromTFHub: true });
-                    
+                    this.model = await tf.loadGraphModel(MODEL_URL);
+
                     showToast({ title: "Model Ready", description: "AI model loaded successfully.", variant: 'success' });
                 }
             }
@@ -241,7 +240,7 @@
                 const min = depthMapTensor.min();
                 const max = depthMapTensor.max();
                 
-                // FIX: Invert depth map (1.0 close, 0.0 far) and normalize
+                // Invert and normalize depth map
                 const invertedNormalizedDepth = tf.sub(1.0, depthMapTensor.sub(min).div(max.sub(min))).squeeze(); 
                 
                 // Resize back to original image dimensions for accurate mesh generation
@@ -251,14 +250,14 @@
                 const depthData = await scaledDepth.data();
                 const depthMapData = new Uint8ClampedArray(image.width * image.height * 4);
 
-                // Convert to RGBA ImageData for display
+                // Convert to RGBA ImageData
                 for (let i = 0; i < depthData.length; i++) {
                     const depthValue = depthData[i];
                     const index = i * 4;
                     depthMapData[index] = depthValue;     // R
                     depthMapData[index + 1] = depthValue; // G
                     depthMapData[index + 2] = depthValue; // B
-                    depthMapData[index + 3] = 255;        // A (fully opaque)
+                    depthMapData[index + 3] = 255;        // A
                 }
 
                 // Cleanup Tensors
@@ -275,7 +274,7 @@
             }
         }
         
-        // --- DEPTH MAP VIEWER (Display) ---
+        // --- DEPTH MAP VIEWER ---
         const depthMapCanvas = document.getElementById('depth-map-canvas');
         const depthMapPlaceholder = document.getElementById('depth-map-placeholder');
         
@@ -292,17 +291,14 @@
             const ctx = depthMapCanvas.getContext('2d');
             ctx.putImageData(imageData, 0, 0);
             
-            // Scale canvas to fit container visually
             depthMapCanvas.style.width = 'auto';
             depthMapCanvas.style.height = '100%';
             depthMapCanvas.classList.remove('hidden');
             depthMapPlaceholder.classList.add('hidden');
         }
 
-        // --- 3. MESH GENERATION FIX (The Core Fix) ---
+        // --- 3. MESH GENERATOR ---
         class MeshGenerator {
-            
-            // FIX: Corrected vertex normalization and face generation logic
             generateMeshFromDepth(imageData) {
                 const { data, width, height } = imageData;
                 const geometry = new THREE.BufferGeometry();
@@ -311,31 +307,28 @@
                 const uvs = [];
                 const indices = [];
 
-                const depthScale = 0.5; // Controls the Z-depth exaggeration 
+                const depthScale = 0.5;
                 const aspectRatio = width / height;
 
                 // 1. Create Vertices and UVs
                 for (let y = 0; y < height; y++) {
                     for (let x = 0; x < width; x++) {
                         const i = (y * width + x) * 4;
-                        // Depth is stored in the R channel (0-255)
                         const normalizedDepth = data[i] / 255.0; 
                         
-                        // FIX: Normalize X, Y coordinates to be centered around (0, 0)
+                        // Normalized and Centered Coordinates
                         const vx = (x / (width - 1) - 0.5) * aspectRatio; 
-                        // FIX: Y inverted for correct 3D orientation (0.5 - y/height)
                         const vy = (0.5 - y / (height - 1)); 
-                        // FIX: Z depth scaling
                         const vz = normalizedDepth * depthScale; 
                         
                         vertices.push(vx, vy, vz);
                         
-                        // UV coordinates for texture mapping
+                        // UV coordinates
                         uvs.push(x / (width - 1), 1 - y / (height - 1)); 
                     }
                 }
 
-                // 2. Create Faces (Indices) - Quad to two Triangles
+                // 2. Create Faces (Indices)
                 for (let y = 0; y < height - 1; y++) {
                     for (let x = 0; x < width - 1; x++) {
                         const i = y * width + x;
@@ -343,10 +336,10 @@
                         const i_down = (y + 1) * width + x;
                         const i_diag = (y + 1) * width + x + 1;
 
-                        // Triangle 1 (i, i_down, i_right)
+                        // Triangle 1
                         indices.push(i, i_down, i_right);
 
-                        // Triangle 2 (i_right, i_down, i_diag)
+                        // Triangle 2
                         indices.push(i_right, i_down, i_diag);
                     }
                 }
@@ -366,12 +359,10 @@
                 
                 let obj = '# OBJ file generated from Depth Map\n';
                 
-                // Write Vertices
                 for (let i = 0; i < vertices.length; i += 3) {
                     obj += `v ${vertices[i]} ${vertices[i + 1]} ${vertices[i + 2]}\n`;
                 }
 
-                // Write Faces (using 1-based indexing for OBJ)
                 for (let i = 0; i < indices.length; i += 3) {
                     const v1 = indices[i] + 1;
                     const v2 = indices[i + 1] + 1;
@@ -403,19 +394,17 @@
         function init3DViewer() {
             if (scene) return; 
 
+            // FIX 1: THREE is guaranteed to be defined here due to script defer loading
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0xf0f0f0); 
 
-            // Camera setup
             camera = new THREE.PerspectiveCamera(75, viewerContainer.clientWidth / viewerContainer.clientHeight, 0.1, 1000);
             camera.position.z = 2;
 
-            // Renderer setup
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(viewerContainer.clientWidth, viewerContainer.clientHeight);
             viewerContainer.appendChild(renderer.domElement);
 
-            // Lighting
             ambientLight = new THREE.AmbientLight(0x404040, 5);
             scene.add(ambientLight);
 
@@ -423,7 +412,6 @@
             directionalLight.position.set(1, 1, 1).normalize();
             scene.add(directionalLight);
 
-            // Controls
             controls = new THREE.OrbitControls(camera, renderer.domElement);
             controls.enableDamping = true;
             controls.dampingFactor = 0.25;
@@ -431,7 +419,6 @@
             controls.minDistance = 0.5;
             controls.maxDistance = 5;
 
-            // Resize listener
             window.addEventListener('resize', onWindowResize, false);
 
             animate();
@@ -464,7 +451,6 @@
         function displayMesh(geometry, textureImage) {
             clear3DViewer();
             
-            // Load the original image as a texture
             const texture = new THREE.Texture(textureImage);
             texture.needsUpdate = true;
 
@@ -479,7 +465,6 @@
             scene.add(meshObject);
             viewerPlaceholder.classList.add('hidden');
             
-            // Fit model to view
             const box = new THREE.Box3().setFromObject(meshObject);
             const size = box.getSize(new THREE.Vector3());
             const center = box.getCenter(new THREE.Vector3());
@@ -490,7 +475,6 @@
             const maxDim = Math.max(size.x, size.y, size.z);
             const fitFactor = 2; 
             
-            // Adjust camera position based on bounding box size
             const positionOffset = new THREE.Vector3(0, 0, maxDim * fitFactor);
             camera.position.copy(center).add(positionOffset);
             
@@ -512,22 +496,19 @@
             exportButton.disabled = true;
 
             try {
-                // Load image
                 const img = new Image();
                 img.src = selectedImageBase64;
                 await new Promise((resolve) => { img.onload = resolve; });
 
-                // 1. Estimate Depth
                 showToast({ title: "Processing image", description: "Estimating depth map..." });
                 const estimatedDepth = await depthEstimator.estimateDepth(img);
                 depthMapImageData = estimatedDepth;
                 displayDepthMap(estimatedDepth);
 
-                // 2. Generate Mesh
                 showToast({ title: "Generating 3D model", description: "Creating mesh from depth data..." });
                 const generated = meshGenerator.generateMeshFromDepth(estimatedDepth);
                 generatedMesh = generated;
-                displayMesh(generated, img); // Pass original image for texture
+                displayMesh(generated, img); 
 
                 showToast({ title: "Success!", description: "3D model generated successfully", variant: 'success' });
                 exportButton.disabled = false;
@@ -536,7 +517,7 @@
                 console.error('Generation error:', error);
                 showToast({ 
                     title: "Generation failed", 
-                    description: error.message || "An unknown error occurred", 
+                    description: error.message || "An unknown error occurred. Check browser console.", 
                     variant: 'destructive' 
                 });
             } finally {
