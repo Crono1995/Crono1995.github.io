@@ -115,9 +115,8 @@
         /** Simple Toast/Notification function (replaces useToast hook) */
         function showToast(title, description, isDestructive = false) {
             console.log(`[Toast] ${title}: ${description}`);
-            // In a real application, you'd implement a visible UI element here.
-            // For this simple example, we'll just use the console and a temporary body message.
             const toastElement = document.createElement('div');
+            // FIX: Ensure no unexpected tokens in template literal
             toastElement.className = \`fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 text-white \${isDestructive ? 'bg-red-600' : 'bg-green-600'}\`;
             toastElement.innerHTML = \`<strong>\${title}</strong>: \${description}\`;
             document.body.appendChild(toastElement);
@@ -131,6 +130,8 @@
         let scene, camera, renderer, meshGroup;
         function initViewer3D() {
             const container = document.getElementById('viewer3d-container');
+            if (!container) return; // Safety check
+            
             const width = container.clientWidth;
             const height = container.clientHeight;
 
@@ -157,8 +158,7 @@
             meshGroup = new THREE.Group();
             scene.add(meshGroup);
 
-            // Add simple orbit controls (using a minimal implementation or a library if needed)
-            // For simplicity, we'll implement basic rotation for now.
+            // Add simple orbit controls (Basic rotation implementation)
             let isDragging = false;
             let previousMousePosition = { x: 0, y: 0 };
 
@@ -176,10 +176,20 @@
                 const deltaX = e.clientX - previousMousePosition.x;
                 const deltaY = e.clientY - previousMousePosition.y;
 
-                meshGroup.rotation.y += deltaX * 0.01;
-                meshGroup.rotation.x += deltaY * 0.01;
+                // Adjust rotation speed
+                meshGroup.rotation.y += deltaX * 0.005; 
+                meshGroup.rotation.x += deltaY * 0.005;
 
                 previousMousePosition = { x: e.clientX, y: e.clientY };
+            });
+            
+            // Handle resizing
+            window.addEventListener('resize', () => {
+                const newWidth = container.clientWidth;
+                const newHeight = container.clientHeight;
+                camera.aspect = newWidth / newHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(newWidth, newHeight);
             });
 
             // Render loop
@@ -282,7 +292,8 @@
                     // Position: Use image coordinates (x, y) and depth (z)
                     const xPos = (x / width - 0.5) * scale;
                     const yPos = (0.5 - y / height) * scale; // Invert y-axis for 3D system
-                    const zPos = normalizedDepth * depthMultiplier; // Extrusion based on depth
+                    // Invert depth: closer objects should push out more (negative Z)
+                    const zPos = -normalizedDepth * depthMultiplier; 
 
                     vertices.push(xPos, yPos, zPos);
 
@@ -318,8 +329,7 @@
             geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
             geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
 
-            // geometry.computeVertexNormals(); // Required for proper lighting
-            geometry.computeFaceNormals();
+            geometry.computeVertexNormals(); // Recalculate normals for proper lighting
             geometry.computeBoundingSphere();
 
             return geometry;
@@ -335,7 +345,7 @@
             return ctx.getImageData(0, 0, img.width, img.height);
         }
 
-        // --- Event Handlers (Replacing React Hooks) ---
+        // --- Event Handlers (Defined in Global Scope - FIX for ReferenceError) ---
 
         /** Handles file selection and updates the image preview. */
         function handleImageSelect(event) {
@@ -442,7 +452,7 @@
             }
 
             try {
-                // Simple OBJ Export function (THREE.js doesn't include an exporter by default, so we'll use a basic implementation)
+                // Simple OBJ Export function
                 const geometry = currentMesh;
                 const positions = geometry.attributes.position.array;
                 const uvs = geometry.attributes.uv.array;
@@ -489,7 +499,7 @@
 
         // --- Initialization ---
 
-        // Wait for the window to load, then initialize the 3D viewer
+        // Only run the 3D viewer initialization after all HTML and scripts are loaded.
         window.onload = () => {
             if (typeof THREE !== 'undefined') {
                 initViewer3D();
@@ -500,4 +510,3 @@
     </script>
 </body>
 </html>
-```
