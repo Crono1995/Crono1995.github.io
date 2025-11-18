@@ -147,9 +147,6 @@
     <script defer src="https://cdn.jsdelivr.net/npm/three@0.165.0/examples/js/controls/OrbitControls.js"></script>
 
     <script>
-        // Initialize Lucide Icons
-        lucide.createIcons();
-
         // --- GLOBAL STATE ---
         let selectedImageBase64 = null;
         let depthMapImageData = null;
@@ -174,32 +171,27 @@
         }
 
         // --- 1. IMAGE UPLOAD LOGIC ---
-        // Get DOM elements
         const imageInput = document.getElementById('image-upload-input');
         const imagePreview = document.getElementById('selected-image-preview');
         const uploadLabel = document.getElementById('upload-label');
         const generateButton = document.getElementById('generate-button');
         const exportButton = document.getElementById('export-button');
 
-        // Listener for file selection
         imageInput.addEventListener('change', (event) => {
             const file = event.target.files[0];
             if (file) {
                 const reader = new FileReader();
                 reader.onload = (e) => {
-                    // Update global state and UI
                     selectedImageBase64 = e.target.result;
                     imagePreview.src = selectedImageBase64;
                     imagePreview.classList.remove('hidden');
                     uploadLabel.classList.add('hidden');
                     
-                    // Reset generated content
                     depthMapImageData = null;
                     generatedMesh = null;
                     clearDepthMap();
                     clear3DViewer();
                     
-                    // Enable the main button
                     generateButton.disabled = false;
                     exportButton.disabled = true;
                 };
@@ -302,7 +294,7 @@
             depthMapPlaceholder.classList.add('hidden');
         }
 
-        // --- 3. MESH GENERATOR (Fixed Geometry) ---
+        // --- 3. MESH GENERATOR ---
         class MeshGenerator {
             generateMeshFromDepth(imageData) {
                 const { data, width, height } = imageData;
@@ -358,7 +350,6 @@
                 return geometry;
             }
 
-            // ... Export functions remain the same ...
             exportToOBJ(geometry) {
                 const vertices = geometry.getAttribute('position').array;
                 const indices = geometry.getIndex().array;
@@ -498,7 +489,8 @@
             isProcessing = true;
             generateButton.disabled = true;
             generateButton.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 mr-2 loader-spin"></i> Processing...`;
-            lucide.createIcons();
+            lucide.createIcons(); // Re-create icons to render the spinner
+
             exportButton.disabled = true;
 
             try {
@@ -530,7 +522,7 @@
                 isProcessing = false;
                 generateButton.disabled = !selectedImageBase64;
                 generateButton.innerHTML = `<i data-lucide="box" class="w-5 h-5 mr-2"></i> <span id="generate-text">Generate 3D Model</span>`;
-                lucide.createIcons();
+                lucide.createIcons(); // Re-create icons to show the box icon again
             }
         });
 
@@ -551,6 +543,7 @@
         
         // --- Initialization on load ---
         document.addEventListener('DOMContentLoaded', () => {
+            // FIX: This ensures all deferred scripts (including Three.js and Lucide) are ready
             init3DViewer(); 
             lucide.createIcons(); 
         });
