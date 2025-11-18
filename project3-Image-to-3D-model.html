@@ -14,7 +14,6 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     
     <style>
-        /* ... (Styling is the same) ... */
         .text-gradient {
             background-image: linear-gradient(45deg, #10b981, #3b82f6);
             -webkit-background-clip: text;
@@ -251,15 +250,17 @@
                 if (!this.model) {
                     showToast({ title: "Loading AI Model", description: "Downloading depth estimation model (This may take a moment)..." });
                     
-                    const MODEL_URL = 'https://s3.eu-central-1.amazonaws.com/models.pytorch.org/midas/depth_v21_small_256_float16_tfjs/model.json';
+                    // CRITICAL FIX: Changed from S3 (CORS blocked) to Google Storage (CORS-friendly)
+                    const MODEL_URL = 'https://storage.googleapis.com/tfjs-models/demos/midas/midas_small_256_256_tfjs/model.json';
                     
                     try {
+                        // Use the new, CORS-friendly URL
                         this.model = await tf.loadGraphModel(MODEL_URL, { onerror: (e) => { console.error("Model load error:", e); } });
                         showToast({ title: "Model Ready", description: "AI model loaded successfully.", variant: 'success' });
                     } catch (e) {
                         console.error("Model loading failed:", e);
                         this.model = 'fallback';
-                        showToast({ title: "Using Fallback", description: "Main AI model failed. Using alternative depth estimation method.", variant: 'info' });
+                        showToast({ title: "Using Fallback", description: "Main AI model failed or blocked by CORS. Using alternative depth estimation method.", variant: 'info' });
                     }
                 }
             }
@@ -362,10 +363,9 @@
                 }
                 const { data, width, height } = imageData;
                 
-                const MAX_PIXELS = 1024 * 1024; // Limit to 1,048,576 pixels (e.g., 1024x1024)
+                const MAX_PIXELS = 1024 * 1024; // Limit to 1,048,576 pixels (1024x1024)
                 
                 if (width * height > MAX_PIXELS) {
-                     // NEW: Throw error on large input to prevent hang
                     throw new Error(`Input depth map too large (${width}x${height}). Max supported size for 3D generation is ~1024x1024.`);
                 }
                 
@@ -418,7 +418,6 @@
             }
 
             exportToOBJ(geometry) {
-                // ... (omitted for brevity)
                 const vertices = geometry.getAttribute('position').array;
                 const indices = geometry.getIndex().array;
                 let obj = '# OBJ file generated from Depth Map\n';
@@ -437,7 +436,6 @@
             }
 
             downloadOBJ(content) {
-                // ... (omitted for brevity)
                 const blob = new Blob([content], { type: 'text/plain' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
@@ -509,7 +507,6 @@
             if (meshObject) {
                 scene.remove(meshObject);
                 meshObject.geometry.dispose();
-                // Check if material is an array (multi-material), though not expected here
                 if (Array.isArray(meshObject.material)) {
                     meshObject.material.forEach(m => m.dispose());
                 } else {
@@ -522,10 +519,6 @@
         }
 
         function displayMesh(geometry, textureImage) {
-            // Note: clear3DViewer is called immediately before this function executes in the button handler
-            // We only need to manage the loading state here.
-            
-            // Start the loading state while the texture loads asynchronously
             startViewerLoading(); 
 
             // Create material and mesh immediately, map texture will be applied in callback
@@ -606,13 +599,11 @@
                 
                 await waitForLibrary('THREE'); 
                 
-                // NEW: Wrap synchronous call in try/catch to ensure errors are caught immediately
                 let generated;
                 try {
                     generated = meshGenerator.generateMeshFromDepth(estimatedDepth);
                     if (!generated) throw new Error("Mesh object was null after generation.");
                 } catch (meshError) {
-                    // Propagate the specific synchronous error
                     throw new Error(`Mesh generation failed during calculation: ${meshError.message}`); 
                 }
                 
@@ -622,7 +613,6 @@
 
             } catch (error) {
                 console.error('Generation error:', error);
-                // Ensure all loading states are halted on error
                 stopViewerLoading(); 
                 showToast({ 
                     title: "Generation failed", 
@@ -630,7 +620,6 @@
                     variant: 'destructive' 
                 });
             } finally {
-                // Ensure button state is reset
                 isProcessing = false;
                 generateButton.disabled = !selectedImageBase64; 
                 generateButton.innerHTML = `<i data-lucide="box" class="w-5 h-5 mr-2"></i> <span id="generate-text">Generate 3D Model</span>`;
@@ -639,7 +628,6 @@
         });
 
         exportButton.addEventListener('click', () => {
-            // ... (Export logic is the same) ...
             if (!generatedMesh) {
                 showToast({ title: "No model to export", description: "Please generate a 3D model first", variant: 'destructive' });
                 return;
