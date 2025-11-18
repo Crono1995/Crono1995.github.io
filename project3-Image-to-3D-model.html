@@ -191,8 +191,6 @@
         const generateButton = document.getElementById('generate-button');
         const exportButton = document.getElementById('export-button');
 
-        // FIXED: The image upload logic was correctly defined but placed where it might
-        // not have run immediately, though it listens for 'change'.
         imageInput.addEventListener('change', (event) => {
             const file = event.target.files[0];
             if (file) {
@@ -252,7 +250,7 @@
                     return this.fallbackDepthEstimation(image);
                 }
 
-                // Standard depth estimation logic... (omitted for brevity, assume correct)
+                // Standard depth estimation with loaded model
                 const tfImage = tf.browser.fromPixels(image);
                 const resizedImage = tf.image.resizeBilinear(tfImage, [this.inputSize, this.inputSize]);
                 const normalized = resizedImage.div(255.0);
@@ -264,6 +262,7 @@
                 const min = depthMapTensor.min();
                 const max = depthMapTensor.max();
                 
+                // Invert, normalize, and resize the depth map
                 const invertedNormalizedDepth = tf.sub(1.0, depthMapTensor.sub(min).div(max.sub(min))).squeeze(); 
                 const resizedDepth = tf.image.resizeBilinear(invertedNormalizedDepth.expandDims(2), [image.height, image.width]);
                 const scaledDepth = resizedDepth.mul(255).cast('int32').clipByValue(0, 255);
@@ -340,7 +339,7 @@
             depthMapPlaceholder.classList.add('hidden');
         }
 
-        // --- 3. MESH GENERATOR (Logic unchanged) ---
+        // --- 3. MESH GENERATOR ---
         class MeshGenerator {
             generateMeshFromDepth(imageData) {
                 if (typeof THREE === 'undefined') {
@@ -392,7 +391,6 @@
             }
 
             exportToOBJ(geometry) {
-                // OBJ export logic... (omitted for brevity, assume correct)
                 const vertices = geometry.getAttribute('position').array;
                 const indices = geometry.getIndex().array;
                 let obj = '# OBJ file generated from Depth Map\n';
@@ -450,13 +448,17 @@
             directionalLight.position.set(1, 1, 1).normalize();
             scene.add(directionalLight);
 
-            // FIXED: Using OrbitControls from the CDN
-            controls = new THREE.OrbitControls(camera, renderer.domElement);
-            controls.enableDamping = true;
-            controls.dampingFactor = 0.25;
-            controls.screenSpacePanning = false;
-            controls.minDistance = 0.5;
-            controls.maxDistance = 5;
+            // Using OrbitControls from the CDN
+            if (typeof THREE.OrbitControls !== 'undefined') {
+                controls = new THREE.OrbitControls(camera, renderer.domElement);
+                controls.enableDamping = true;
+                controls.dampingFactor = 0.25;
+                controls.screenSpacePanning = false;
+                controls.minDistance = 0.5;
+                controls.maxDistance = 5;
+            } else {
+                console.warn("THREE.OrbitControls not found. Check CDN link.");
+            }
 
             window.addEventListener('resize', onWindowResize, false);
 
@@ -473,7 +475,8 @@
         
         function animate() {
             requestAnimationFrame(animate);
-            if (controls) controls.update(); // Update controls in the animation loop
+            // CRITICAL: Must update controls in the animation loop
+            if (controls) controls.update(); 
             if (renderer && scene && camera) renderer.render(scene, camera);
         }
 
@@ -490,69 +493,104 @@
         function displayMesh(geometry, textureImage) {
             clear3DViewer();
             
-            const texture = new THREE.Texture(textureImage);
-            texture.needsUpdate = true;
+            // Use TextureLoader to handle asynchronous image loading for robust rendering
+            const texture = new THREE.TextureLoader().load(textureImage.src, 
+                () => {
+                    // Success callback
+                    showToast({ title: "3D Model Ready", description: "Use your mouse to rotate the model.", variant: 'success' });
+                    exportButton.disabled = false;
+                },
+                undefined, // Progress callback
+                (error) => {
+                    // Error callback
+                    console.error('Texture loading error:', error);
+                    showToast({ title: "Texture Error", description: "Failed to load image texture onto the model.", variant: 'destructive' });
+                }
+            );
 
-            const material = new THREE.MeshPhysicalMaterial({ 
+            // Using MeshLambertMaterial for simplicity with lighting
+            const material = new THREE.MeshLambertMaterial({ 
                 map: texture, 
                 side: THREE.DoubleSide,
-                roughness: 0.8,
-                metalness: 0.1,
             });
 
             meshObject = new THREE.Mesh(geometry, material);
             scene.add(meshObject);
             viewerPlaceholder.classList.add('hidden');
             
-            // Recenter and fit the model
+            // Recenter and fit the model (CRITICAL for visibility)
             const box = new THREE.Box3().setFromObject(meshObject);
             const size = box.getSize(new THREE.Vector3());
             const center = box.getCenter(new THREE.Vector3());
 
             meshObject.position.sub(center); 
-            controls.target.copy(meshObject.position);
-
+            
+            if (controls) {
+                controls.target.copy(meshObject.position);
+            }
+            
             const maxDim = Math.max(size.x, size.y, size.z);
             const fitFactor = 1.5; 
             
             const newDistance = maxDim * fitFactor;
-            camera.position.set(0, 0, newDistance);
+            
+            // Reset camera to view the new model
+            camera.position.set(0, 0, newDistance); 
             
             camera.updateProjectionMatrix();
-            controls.update();
+            if (controls) controls.update();
         }
         
+        // --- MAIN APPLICATION LOGIC ---
         const depthEstimator = new DepthEstimator();
-		const meshGenerator = new MeshGenerator(); // Instantiate early, but ensure methods are called late
+        const meshGenerator = new MeshGenerator();
 
-		generateButton.addEventListener('click', async () => {
-			if (!selectedImageBase64 || isProcessing) return;
+        generateButton.addEventListener('click', async () => {
+            if (!selectedImageBase64 || isProcessing) return;
 
-			// ... (rest of processing setup)
+            isProcessing = true;
+            generateButton.disabled = true;
+            generateButton.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 mr-2 loader-spin"></i> Processing...`;
+            lucide.createIcons();
 
-			try {
-				// ... (Image loading and Depth Estimation steps are fine)
+            exportButton.disabled = true;
 
-				showToast({ title: "Generating 3D model", description: "Creating mesh from depth data..." });
-				
-				// --- CRITICAL FIX: Ensure THREE.js is ready before calling MeshGenerator methods ---
-				await waitForLibrary('THREE'); 
-				
-				const generated = meshGenerator.generateMeshFromDepth(estimatedDepth);
-				// The original check below is now mostly redundant but safe to keep
-				if (!generated) throw new Error("Mesh generation failed (check Three.js dependencies).");
+            try {
+                const img = new Image();
+                img.src = selectedImageBase64;
+                await new Promise((resolve) => { img.onload = resolve; });
 
-				generatedMesh = generated;
-				displayMesh(generated, img); 
+                showToast({ title: "Processing image", description: "Estimating depth map..." });
+                const estimatedDepth = await depthEstimator.estimateDepth(img);
+                depthMapImageData = estimatedDepth;
+                displayDepthMap(estimatedDepth);
 
-				// ... (success toasts and export button enabling)
+                showToast({ title: "Generating 3D model", description: "Creating mesh from depth data..." });
+                
+                // CRITICAL FIX: Ensure THREE.js is ready before calling mesh generation
+                await waitForLibrary('THREE'); 
 
-			} catch (error) {
-				// ... (error handling)
-			} finally {
-				// ... (cleanup)
-			}
-		});
+                const generated = meshGenerator.generateMeshFromDepth(estimatedDepth);
+                if (!generated) throw new Error("Mesh generation failed.");
+
+                generatedMesh = generated;
+                // displayMesh now handles success/failure toast and export button enabling internally
+                displayMesh(generated, img); 
+
+            } catch (error) {
+                console.error('Generation error:', error);
+                showToast({ 
+                    title: "Generation failed", 
+                    description: error.message || "An unknown error occurred. Check browser console.", 
+                    variant: 'destructive' 
+                });
+            } finally {
+                isProcessing = false;
+                generateButton.disabled = !selectedImageBase64; 
+                generateButton.innerHTML = `<i data-lucide="box" class="w-5 h-5 mr-2"></i> <span id="generate-text">Generate 3D Model</span>`;
+                lucide.createIcons(); 
+            }
+        });
 
         exportButton.addEventListener('click', () => {
             if (!generatedMesh) {
@@ -569,7 +607,7 @@
             }
         });
         
-        // FIXED: Ensure initialization runs after all scripts are loaded.
+        // Ensure initialization runs after all scripts are loaded.
         (async function() {
             await init3DViewer(); 
             lucide.createIcons(); 
