@@ -282,8 +282,8 @@
                 if (!this.model) {
                     showToast({ title: "Loading AI Model", description: "Downloading depth estimation model (This may take a moment)..." });
                     
-                    // FINAL FIX: Corrected URL to the actual nested path for the small MiDaS model
-                    const MODEL_URL = 'https://storage.googleapis.com/tfjs-models/demos/midas/depth_v21_small_256_float16_tfjs/model.json';
+                    // DEFINITIVE FIX: Switched to the reliable MiDaS v2.1 Small model hosted on TF Hub
+                    const MODEL_URL = 'https://tfhub.dev/intel/midas/v2_small/2/default/1/model.json?tfjs-format=file';
                     
                     try {
                         this.model = await tf.loadGraphModel(MODEL_URL, { 
@@ -363,7 +363,7 @@
                 
                 for (let y = 0; y < image.height; y++) {
                     for (let x = 0; x < image.width; x++) {
-                        const i = (y * image.width + x) * 4;
+                        const i = (y * width + x) * 4;
                         const luminance = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
                         const verticalBias = (y / image.height) * 80;
                         const depthValue = Math.min(255, Math.max(0, (255 - luminance) * 0.7 + verticalBias));
