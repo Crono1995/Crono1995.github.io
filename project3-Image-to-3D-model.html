@@ -8,18 +8,20 @@
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone@7.24.8/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    
     <script src="https://unpkg.com/three@0.166.1/build/three.min.js"></script>
     <script src="https://unpkg.com/three@0.166.1/examples/js/controls/OrbitControls.js"></script>
     
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script> 
     
     <style>
-        /* ... CSS Styles ... */
+        /* CSS Styles */
         body { background-color: white; color: black; }
         @media (prefers-color-scheme: dark) {
             body { background-color: #1f2937; color: white; }
         }
-        .min-h-screen { min-height: 100vh; }
+        /* Ensure the root element covers the screen to show the content */
+        #root { min-height: 100vh; }
     </style>
 </head>
 <body>
@@ -30,10 +32,19 @@
         const { useState, useCallback, useEffect, useRef } = React;
         const ReactDOM = window.ReactDOM;
         const THREE = window.THREE;
-        const OrbitControls = window.THREE.OrbitControls;
         
-        // FIX: Create simple React wrappers for Lucide icons 
-        // We now use the global 'lucide' object provided by the lucide.js CDN.
+        // --- FIX APPLIED HERE ---
+        // Access OrbitControls robustly. 
+        // 1. Try THREE.OrbitControls (ideal UMD export)
+        // 2. Fall back to window.OrbitControls (common legacy global export)
+        const OrbitControls = window.THREE.OrbitControls || window.OrbitControls;
+        
+        if (typeof OrbitControls === 'undefined') {
+            console.error("Fatal Error: OrbitControls failed to load. 3D Viewer will not function.");
+            // Prevent further execution by throwing an error or rendering a fallback UI
+        }
+        
+        // Icon setup from the previous fix remains (using lucide core library)
         const createIcon = (IconFunction) => ({ className, ...props }) => (
             <span 
                 className={className} 
@@ -41,7 +52,6 @@
             />
         );
         
-        // Map the icons used in the app to simple React components
         const Box = createIcon(lucide.Box);
         const Download = createIcon(lucide.Download);
         const Loader2 = createIcon(lucide.Loader2);
@@ -50,7 +60,6 @@
         
         // --- UTILITIES & MOCK UI ---
         
-        // ... (rest of the utility functions like cn, Card, Button, useToast, MockToastContainer remain the same) ...
         const cn = (...classes) => classes.filter(Boolean).join(' ');
 
         // Mock Shadcn Components
@@ -309,6 +318,17 @@
         };
 
         const Viewer3D = ({ mesh }) => {
+            // Check if controls are available before trying to use them
+            if (typeof OrbitControls === 'undefined') {
+                return (
+                    <div className="border border-red-400 rounded-lg bg-red-50 dark:bg-red-900 flex items-center justify-center h-[300px] lg:h-[400px] relative">
+                        <p className="text-red-700 dark:text-red-300 p-4 text-center">
+                            3D Viewer Error: Three.js OrbitControls failed to load. Please check your browser console for CDN issues.
+                        </p>
+                    </div>
+                );
+            }
+
             const mountRef = useRef(null);
             const sceneRef = useRef(null);
             const cameraRef = useRef(null);
@@ -381,7 +401,7 @@
                 if (meshObjectRef.current) {
                     scene.remove(meshObjectRef.current);
                     meshObjectRef.current.geometry.dispose();
-                    if (Array.isArray(meshObjectRef.current.material)) meshObjectRef.current.material.forEach(m => m.dispose());
+                    if (Array.isArray(meshObjectRef.current.material)) meshObjectOfRef.current.material.forEach(m => m.dispose());
                     else meshObjectRef.current.material.dispose();
                     meshObjectRef.current = null;
                 }
