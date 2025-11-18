@@ -198,7 +198,7 @@
             }
         });
 
-        // --- 2. DEPTH ESTIMATION CLASS (Final Model Source Fix) ---
+        // --- 2. DEPTH ESTIMATION CLASS (CORS FIX) ---
         class DepthEstimator {
             constructor() {
                 this.model = null;
@@ -210,12 +210,18 @@
                 if (!this.model) {
                     showToast({ title: "Loading AI Model", description: "Downloading depth estimation model (This may take a moment)..." });
                     
-                    // FIX: Using the highly reliable TensorFlow Hub URL for MiDaS Small.
-                    const MODEL_URL = 'https://tfhub.dev/intel/midas/v2/2d/small/1?tfjs-format=tfjs_graph_model';
+                    // FIX: Using a CORS-friendly raw data URL from an open repository. 
+                    // This often resolves hard CORS issues where TF Hub fails.
+                    const MODEL_URL = 'https://raw.githubusercontent.com/rmccorm4/tfjs-examples/master/depth-estimation/midas/model.json';
                     
-                    this.model = await tf.loadGraphModel(MODEL_URL);
-
-                    showToast({ title: "Model Ready", description: "AI model loaded successfully.", variant: 'success' });
+                    try {
+                        this.model = await tf.loadGraphModel(MODEL_URL);
+                        showToast({ title: "Model Ready", description: "AI model loaded successfully.", variant: 'success' });
+                    } catch (e) {
+                        console.error("Model loading failed with the new URL:", e);
+                        showToast({ title: "Model Load Failed", description: "Could not fetch model due to network/CORS issue. Try refreshing.", variant: 'destructive' });
+                        throw new Error("Failed to fetch the depth estimation model.");
+                    }
                 }
             }
 
@@ -388,9 +394,12 @@
         const viewerPlaceholder = document.getElementById('viewer-placeholder');
 
         function init3DViewer() {
+            if (typeof THREE === 'undefined') {
+                console.error("THREE is not defined, skipping init3DViewer.");
+                return;
+            }
             if (scene) return; 
 
-            // THREE is guaranteed to be defined because scripts are loaded synchronously in the head
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0xf0f0f0); 
 
@@ -408,6 +417,7 @@
             directionalLight.position.set(1, 1, 1).normalize();
             scene.add(directionalLight);
 
+            // OrbitControls requires THREE to be defined
             controls = new THREE.OrbitControls(camera, renderer.domElement);
             controls.enableDamping = true;
             controls.dampingFactor = 0.25;
@@ -520,7 +530,8 @@
                 });
             } finally {
                 isProcessing = false;
-                generateButton.disabled = !selectedImageBase64;
+                // Re-enable button unless an image hasn't been selected
+                generateButton.disabled = !selectedImageBase64; 
                 generateButton.innerHTML = `<i data-lucide="box" class="w-5 h-5 mr-2"></i> <span id="generate-text">Generate 3D Model</span>`;
                 lucide.createIcons(); 
             }
@@ -541,13 +552,22 @@
             }
         });
         
-        // --- Initialization on load ---
-        // Final Fix: Use DOMContentLoaded to ensure the elements are available, 
-        // relying on synchronous loading in the head to guarantee THREE is defined.
-        document.addEventListener('DOMContentLoaded', () => {
+        // --- Initialization Fix (Robust Dependency Check) ---
+        function initializeApp() {
+            // Check if dependencies are loaded
+            if (typeof THREE === 'undefined' || typeof tf === 'undefined' || typeof lucide === 'undefined') {
+                // If not ready, poll again after a short delay
+                setTimeout(initializeApp, 50);
+                return;
+            }
+
+            // Once ready, initialize the viewer and icons
             init3DViewer(); 
             lucide.createIcons(); 
-        });
+        }
+
+        // Start the initialization check once the DOM is ready
+        document.addEventListener('DOMContentLoaded', initializeApp);
 
     </script>
 </body>
